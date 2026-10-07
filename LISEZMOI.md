@@ -23,6 +23,7 @@ Raccourcis : espace = pause, 1 / 2 / 3 = vitesse, A = liste « À faire » ; dan
 | `src/ui/sons.js` | Sons et musique synthétisés dans le navigateur (Web Audio, aucun fichier audio) : tiroir-caisse à chaque vente, notifications, bilan, palier, victoire, faillite, et musique d'ambiance lo-fi en boucle. Bouton haut-parleur dans la barre et sur l'accueil ; cases « Effets sonores » et « Musique » dans le Menu (mémorisées sur l'appareil). |
 | `src/ui/tuto.js` | Tuto guidé (13 étapes) et astuces ponctuelles : une bulle pointe le bon bouton ; les étapes et les textes sont en haut du fichier |
 | `src/main.js` | Écrans, boucle du temps, actions du joueur |
+| `img/` | Logo du jeu, icônes, et images facultatives : logos des rivaux (`img/rivaux/`) et illustrations des dilemmes (`img/dilemmes/`), affichés dès que le fichier existe. Prompts pour les générer : `img/PROMPTS-HIGGSFIELD.md`. |
 | `tools/simuler.js` | Fait tourner la simulation seule pendant plusieurs mois pour vérifier l'économie |
 
 ## Vérifier l'économie sans l'écran

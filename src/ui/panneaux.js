@@ -14,6 +14,26 @@
     return '<span class="mini-jauge ' + (r < 0.35 ? "bas" : r < 0.6 ? "moyen" : "") + '"><span style="width:' + Math.round(r * 100) + '%"></span></span>';
   }
 
+  // Images facultatives (logos des rivaux, illustrations des dilemmes) : chargées une fois en arrière-plan,
+  // affichées seulement si le fichier existe ; sinon le jeu garde son repli (initiale, fenêtre sans image).
+  var images = {};
+  function image(src) {
+    if (!src) return false;
+    if (!(src in images)) {
+      images[src] = false;
+      var im = new Image();
+      im.onload = function () { images[src] = true; };
+      im.src = src;
+    }
+    return images[src];
+  }
+  function imageDilemme(x) { return x.image === false ? null : x.image || (D().dilemmes.dossierImages || "img/dilemmes/") + x.id + ".jpg"; }
+  (function () {
+    var d = D();
+    ((d.concurrents && d.concurrents.chaines) || []).forEach(function (ch) { image(ch.logo); });
+    ((d.dilemmes && d.dilemmes.liste) || []).forEach(function (x) { image(imageDilemme(x)); });
+  })();
+
   // Petite icône par type de produit (portable, tour, carte graphique, écran…), teintée selon la catégorie
   var ICONES = {
     portable_bureau: '<rect x="4" y="5" width="16" height="10" rx="1.5"/><path d="M2 19h20"/>',
@@ -708,7 +728,10 @@
     return h + "</div>";
   }
   // ------------------------------------------------------------ Concurrents d'une ville
-  function logoRival(ch) { return '<span class="logo-rival" style="--c:' + ch.couleur + '" aria-hidden="true">' + esc(ch.initiale) + "</span>"; }
+  function logoRival(ch) {
+    if (image(ch.logo)) return '<img class="logo-rival image" src="' + esc(ch.logo) + '" alt="" aria-hidden="true">';
+    return '<span class="logo-rival" style="--c:' + ch.couleur + '" aria-hidden="true">' + esc(ch.initiale) + "</span>";
+  }
   function blocConcurrents(s, villeId) {
     var Sim = TMI.Sim, d = D(), C = d.concurrents;
     if (!C) return "";
@@ -862,5 +885,5 @@
   }
 
   TMI.Panneaux = { icone: icone, deco: deco, alertesEnseigne: alertesEnseigne, logistique: logistique, ficheBoutique: ficheBoutique, ficheVille: ficheVille, rayons: rayons, stock: stock, commandes: commandes, local: local, effetsEvenement: effetsEvenement, prix: prix, personnel: personnel, bilan: bilan, journal: journal,
-    atelier: atelier, resumeCompo: resumeCompo, compoInitiale: compoInitiale, pub: pub, estimationTexte: estimationTexte, euros: euros, signe: signe, esc: esc };
+    atelier: atelier, resumeCompo: resumeCompo, compoInitiale: compoInitiale, pub: pub, estimationTexte: estimationTexte, euros: euros, signe: signe, esc: esc, image: image, imageDilemme: imageDilemme };
 })(window);

@@ -719,7 +719,7 @@
   function vueDilemme(s) {
     var dl = s.dilemme, d = dl && defDilemme(dl.id);
     if (!d) return null;
-    return { titre: remplir(d.titre, dl.vars), texte: remplir(d.texte, dl.vars), ville: dl.vars.ville, magasin: dl.magasin,
+    return { id: d.id, image: d.image, titre: remplir(d.titre, dl.vars), texte: remplir(d.texte, dl.vars), ville: dl.vars.ville, magasin: dl.magasin,
       choix: d.choix.map(function (x) { return { texte: remplir(x.texte, dl.vars), cout: coutChoix(x, dl.vars) }; }) };
   }
   function appliquerEffets(s, x, dl) {

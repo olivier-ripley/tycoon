@@ -2,21 +2,23 @@
 // La moitié de la concurrence d'une ville (typesVilles.concurrence) vient de petits indépendants invisibles ;
 // l'autre moitié est remplacée par les vrais magasins des enseignes ci-dessous, qui bougent au fil des mois.
 //
+// logo : image carrée facultative (PNG, fond transparent) ; tant que le fichier n'existe pas, le jeu affiche l'initiale sur la couleur.
+//
 // Force d'un magasin rival : 0 à 100. À force 50, il retire « impact » de clients à ta boutique de la ville
 // (0.10 = −10 %). Il ferme quand sa force passe sous « forceFermeture ».
 window.TMI_DATA = window.TMI_DATA || {};
 
 TMI_DATA.concurrents = {
   chaines: [
-    { id: "megapc", nom: "MégaPC", initiale: "M", couleur: "#e8504a", style: "Discount",
+    { id: "megapc", logo: "img/rivaux/megapc.png", nom: "MégaPC", initiale: "M", couleur: "#e8504a", style: "Discount",
       texte: "Prix cassés et peu de conseil : ses clients comparent les prix.",
       impact: 0.09, pressionPrix: 0.25,                    // à force 50 : les clients de la ville sont 25 % plus sensibles au prix
       villes: { petite: 0.6, moyenne: 1, grande: 1, paris: 1 } },
-    { id: "technoplus", nom: "TechnoPlus", initiale: "T", couleur: "#6c5ce7", style: "Grande surface",
+    { id: "technoplus", logo: "img/rivaux/technoplus.png", nom: "TechnoPlus", initiale: "T", couleur: "#6c5ce7", style: "Grande surface",
       texte: "Grands magasins high-tech dans les grandes villes : il attire le plus de monde.",
       impact: 0.12, pressionPrix: 0,
       villes: { petite: 0.1, moyenne: 0.5, grande: 1.4, paris: 1.6 } },
-    { id: "infoproxi", nom: "Info Proxi", initiale: "P", couleur: "#2bb3b1", style: "Proximité",
+    { id: "infoproxi", logo: "img/rivaux/infoproxi.png", nom: "Info Proxi", initiale: "P", couleur: "#2bb3b1", style: "Proximité",
       texte: "Petites boutiques de quartier, jusque dans les petites villes.",
       impact: 0.08, pressionPrix: 0,
       villes: { petite: 1.4, moyenne: 1.2, grande: 0.7, paris: 0.6 } }

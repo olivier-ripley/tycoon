@@ -770,8 +770,8 @@
   function modalDilemme() {
     var d = Sim.vueDilemme(etat);
     if (!d) return;
-    var plusieurs = etat.magasins.length > 1;
-    ouvrirModal('<p class="sur-titre">Décision' + (plusieurs ? " · " + P.esc(d.ville) : "") + '</p><h2 class="annonce">' + P.esc(d.titre) + "</h2><p>" + P.esc(d.texte) + "</p>" +
+    var plusieurs = etat.magasins.length > 1, img = P.imageDilemme(d);
+    ouvrirModal((P.image(img) ? '<img class="illus-dilemme" src="' + P.esc(img) + '" alt="">' : "") + '<p class="sur-titre">Décision' + (plusieurs ? " · " + P.esc(d.ville) : "") + '</p><h2 class="annonce">' + P.esc(d.titre) + "</h2><p>" + P.esc(d.texte) + "</p>" +
       '<p class="aide">Trésorerie : ' + P.euros(etat.argent) + "</p>",
       d.choix.map(function (x, k) {
         return { texte: P.esc(x.texte), style: k === 0 ? "principal" : "", action: function () {

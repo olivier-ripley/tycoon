@@ -426,7 +426,8 @@
         var ch = TMI.Sim.chaine(r.chaine), b = el("g", { transform: "translate(" + (k * 17) + ",0)" }, g);
         el("title", {}, b).textContent = ch.nom + " (" + ch.style.toLowerCase() + ") à " + d.villes.filter(function (v) { return v.id === vid; })[0].nom;
         el("rect", { x: -8, y: -8, width: 16, height: 16, rx: 4.5, fill: ch.couleur, stroke: "#fff", "stroke-width": 2, opacity: (0.55 + r.force / 220).toFixed(2) }, b);
-        var t = el("text", { "text-anchor": "middle", y: 3.8, "font-size": 10.5, "font-weight": 800, fill: "#fff", class: "svg-texte" }, b); t.textContent = ch.initiale;
+        if (TMI.Panneaux.image(ch.logo)) el("image", { href: ch.logo, x: -7, y: -7, width: 14, height: 14 }, b);
+        else { var t = el("text", { "text-anchor": "middle", y: 3.8, "font-size": 10.5, "font-weight": 800, fill: "#fff", class: "svg-texte" }, b); t.textContent = ch.initiale; }
       });
     });
     this.posM = s.magasins.map(function (x, i) { return self.villes[TMI.Sim.magasin(s, i).villeId].pos; });
@@ -435,7 +436,8 @@
     this.appliquer();
     this.choisir(null);
   };
-  function cleMagasins(s) { return s.actif + ":" + s.magasins.map(function (x, i) { return TMI.Sim.magasin(s, i).villeId; }).join(",") + "|" + Object.keys(s.entrepots || {}).join(",") + "|" + ((s.rivaux && s.rivaux.magasins) || []).map(function (r) { return r.id; }).join(","); }
+  // (les logos des rivaux comptent dans la clé : la carte se redessine quand ils finissent de charger)
+  function cleMagasins(s) { return ((TMI_DATA.concurrents && TMI_DATA.concurrents.chaines) || []).map(function (ch) { return TMI.Panneaux.image(ch.logo) ? 1 : 0; }).join("") + "|" + s.actif + ":" + s.magasins.map(function (x, i) { return TMI.Sim.magasin(s, i).villeId; }).join(",") + "|" + Object.keys(s.entrepots || {}).join(",") + "|" + ((s.rivaux && s.rivaux.magasins) || []).map(function (r) { return r.id; }).join(","); }
 
   VueCarte.prototype.choisir = function (villeId) {
     var prec = this.selection && this.villes[this.selection];

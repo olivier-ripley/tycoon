@@ -14,12 +14,15 @@
 //   lot        : le lot de produits est livré en réserve
 //   alea       : { chance: 0.7, succes: { ...effets, resultat }, echec: { ...effets, resultat } }
 //   resultat   : texte affiché après le choix
+// Illustration : img/dilemmes/<id>.jpg (16:9), affichée en haut de la fenêtre si le fichier existe.
+//   « image: "chemin" » pour un autre fichier, « image: false » pour ne jamais en afficher.
 window.TMI_DATA = window.TMI_DATA || {};
 
 TMI_DATA.dilemmes = {
   chanceParJour: 0.045,          // environ un dilemme toutes les trois semaines de jeu
   premierJour: 21,               // pas de dilemme pendant les trois premières semaines
   delaiMemeDilemme: 168,         // jours avant qu'un même dilemme puisse revenir (6 mois)
+  dossierImages: "img/dilemmes/",
   echelle: { petite: 0.7, moyenne: 0.85, grande: 1, paris: 1.3 },
   liste: [
     { id: "youtubeur", poids: 3, titre: "Un youtubeur tech te contacte",
