@@ -748,3 +748,14 @@ svg .tuto-cible, .marqueur-boutique.tuto-cible { outline: none !important; anima
 .ligne.rival .droite { grid-column: 2; justify-content: flex-start; }
 .ligne.rival .detail .mini-jauge { margin-right: 4px; }
 .c-rivaux { pointer-events: auto; cursor: help; }
+
+/* ============================================================ Son : bouton haut-parleur (barre du jeu, accueil) et réglages du menu */
+.bouton-son { display: inline-grid; place-items: center; padding: 0 10px; }
+.bouton-son .barre-son { display: none; }
+.bouton-son.coupe .ondes { display: none; }
+.bouton-son.coupe .barre-son { display: inline; }
+.bouton-son.coupe { color: var(--hud-texte-2); }
+.bouton-son-accueil { position: absolute; top: 14px; right: 16px; z-index: 2; width: 40px; height: 40px; border-radius: 12px; padding: 0;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: var(--hud-texte); cursor: pointer; }
+.bouton-son-accueil:hover { background: rgba(255,255,255,.12); }
+.reglages-son { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 10px 12px; border: 1px solid var(--bord); border-radius: 12px; background: var(--surface-2); }

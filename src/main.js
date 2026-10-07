@@ -352,6 +352,7 @@
         reste -= n;
         var jourAvant = etat.jour;
         Sim.avancer(etat, n);
+        sonsVentes();
         traiterEvenements();
         if (etat && etat.jour !== jourAvant) sauver();
       }
@@ -366,9 +367,18 @@
     requestAnimationFrame(boucle);
   }
 
+  // Sons : tiroir-caisse pour une vente dans le magasin affiché, petite pièce pour les autres magasins
+  function jouerSon(nom) { if (TMI.Sons) TMI.Sons.jouer(nom); }
+  function sonsVentes() {
+    var v = etat.stats.ventes, m = etat.mois.ventes, k = sonsVentes;
+    if (k.etat === etat && k.mag === etat.actif && v > k.total) jouerSon(modeVue === "magasin" && m > k.m ? "caisse" : "piece");
+    k.etat = etat; k.mag = etat.actif; k.total = v; k.m = m;
+  }
   function traiterEvenements() {
     var r = Sim.vider(etat);
     r.evenements.forEach(function (e) {
+      var son = { bilan: "bilan", palier: "palier", victoire: "victoire", faillite: "faillite", deblocage: "evenement", evenement: "evenement" }[e.type];
+      if (son) jouerSon(son);
       if (e.type === "bilan") return modalBilan(e.bilan, e.details);
       if (e.type === "palier") return modalPalier(e);
       if (e.type === "victoire") return modalVictoire();
@@ -691,6 +701,7 @@
     if (deja) return;
     var t = document.createElement("div");
     t.className = "toast " + (type || "");
+    if (type === "alerte" || type === "bon") jouerSon(type);
     t.textContent = texte;
     $("#toasts").appendChild(t);
     while ($("#toasts").children.length > (root.innerWidth < 900 ? 2 : 4)) $("#toasts").firstChild.remove();
@@ -868,7 +879,10 @@
     var ligneNuage = !sy ? (Compte.dispo() ? " Tu joues en invité : la partie reste sur cet appareil." : "")
       : sy.erreur ? " <span class=\"negatif\">Sauvegarde en ligne en échec : " + P.esc(sy.erreur) + "</span>"
       : " Sauvegarde en ligne (compte " + P.esc(Compte.utilisateur().email || "") + ")" + (sy.derniere ? " : dernier envoi à " + new Date(sy.derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "." : ".");
-    ouvrirModal("<h2>Menu</h2><p class=\"aide\">La partie est enregistrée automatiquement chaque jour dans l'emplacement " + emplacement + "." + ligneNuage + "</p>", [
+    var rs = TMI.Sons ? TMI.Sons.reglages() : null;
+    var blocSons = rs ? "<div class=\"reglages-son\"><label class=\"interrupteur\"><input type=\"checkbox\" data-reglage-son=\"effets\"" + (rs.effets ? " checked" : "") + "> Effets sonores</label>" +
+      "<label class=\"interrupteur\"><input type=\"checkbox\" data-reglage-son=\"musique\"" + (rs.musique ? " checked" : "") + "> Musique d'ambiance</label></div>" : "";
+    ouvrirModal("<h2>Menu</h2><p class=\"aide\">La partie est enregistrée automatiquement chaque jour dans l'emplacement " + emplacement + "." + ligneNuage + "</p>" + blocSons, [
       { texte: "Aide", action: modalBienvenue },
       { texte: "Revoir le tuto", action: function () { tuto.demarrer(etat); majVitesse(0); if (modeVue !== "carte") montrerVue("carte"); } }
     ].concat(root.TMI_SANS_EXPORT ? [] : [

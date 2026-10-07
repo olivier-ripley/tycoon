@@ -30,6 +30,7 @@
       </label>
     </div>
     <div id="scene-accueil" class="scene-accueil" aria-hidden="true"></div>
+    <button class="bouton-son bouton-son-accueil" data-son aria-label="Son du jeu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z" fill="currentColor"/><path class="ondes" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="barre-son" d="M16 9l5 6M21 9l-5 6"/></svg></button>
     <p class="version-accueil">Prototype · phase 2 · l'atelier</p>
   </section>
 
@@ -87,6 +88,7 @@
       </div>
       <button class="bouton-menu bouton-afaire" id="b-afaire" title="Ce qui demande ton attention (A)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span class="texte">À faire</span><span class="compteur" id="b-afaire-n" hidden></span></button>
       <button class="bouton-menu" id="b-vue" title="Revenir à la carte (Échap)">Carte</button>
+      <button class="bouton-menu bouton-son" id="b-son" data-son aria-label="Son du jeu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z" fill="currentColor"/><path class="ondes" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="barre-son" d="M16 9l5 6M21 9l-5 6"/></svg></button>
       <button class="bouton-menu" id="b-menu" title="Menu">Menu</button>
     </header>
     <main class="ecran-carte" id="vue-carte">
@@ -171,6 +173,7 @@
   <script src="src/ui/panneaux.js"></script>
   <script src="src/ui/vue-carte.js"></script>
   <script src="src/ui/tuto.js"></script>
+  <script src="src/ui/sons.js"></script>
   <script src="src/ui/accueil-vivant.js"></script>
   <script src="src/main.js"></script>
 </body>
