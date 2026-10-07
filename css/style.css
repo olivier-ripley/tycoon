@@ -697,3 +697,46 @@ svg .tuto-cible, .marqueur-boutique.tuto-cible { outline: none !important; anima
 #ecran-compte #form-compte input:focus { border-color: var(--accent); }
 #ecran-compte .message-compte.erreur { color: #ff6b81; }
 #ecran-compte .message-compte.bon { color: #4ade80; }
+
+/* ============================================================ Jeu : habillage de nuit (identité Kaouch Tycoon)
+   Les couleurs de base deviennent sombres dans l'écran de jeu, les fenêtres et les notifications ;
+   l'intérieur de la carte et du magasin dessinés garde ses couleurs claires. */
+#ecran-jeu, .modal, .toasts {
+  --fond: #0f1526; --surface: #1a2236; --surface-2: #232d47; --bord: #313d5e;
+  --texte: #eef2fb; --texte-2: #a3aecb; --accent-doux: rgba(36,87,255,.2);
+  --ombre: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark; color: var(--texte);
+}
+#carte, #magasin { --surface: #ffffff; --surface-2: #f5f7fb; --bord: #dce2ea; --texte: #151b2b; --texte-2: #5b6578; }
+#ecran-jeu { background:
+  radial-gradient(900px 600px at 30% 40%, rgba(64,110,255,.16), transparent 65%),
+  linear-gradient(180deg, #0c1222 0%, #141b2d 100%); }
+.barre { background: linear-gradient(180deg, #0a0f1d, #111829); border-bottom: 1px solid rgba(255,255,255,.06); }
+.logo-barre { height: 34px; width: auto; flex: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+@media (max-width: 760px) { .logo-barre { display: none; } }
+.bloc-chiffre strong#b-argent { color: #ffd34d; }
+.panneau, .fiche { background: rgba(20,27,45,.92); border-left-color: rgba(255,255,255,.06); }
+#magasin { background: radial-gradient(120% 90% at 50% 0%, #2b3a63 0%, #172038 60%, #10172a 100%); border-color: rgba(255,255,255,.08); }
+#magasin3d { background: radial-gradient(120% 90% at 50% 0%, #2b3a63 0%, #172038 60%, #10172a 100%); border-color: rgba(255,255,255,.08); }
+#carte { border-color: rgba(255,255,255,.08); }
+.camera button:hover { border-color: rgba(255,255,255,.3); }
+/* couleurs claires codées en dur, passées en version sombre */
+.jauge-rep, .mini-jauge { background: rgba(255,255,255,.12); }
+.puce.actif { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ligne.surbrillance { background: rgba(36,87,255,.16); }
+.etat { background: rgba(255,255,255,.08); }
+.etat.alerte { background: rgba(255,122,26,.16); color: #ffab6b; }
+.etat.danger { background: rgba(214,51,74,.18); color: #ff8a9a; }
+.toast { background: #232d47; border: 1px solid rgba(255,255,255,.08); color: #fff; }
+.alerte-carte { border-color: rgba(255,122,26,.4); background: rgba(255,122,26,.1); }
+.objectif.evenement { background: rgba(255,122,26,.12); border-color: rgba(255,122,26,.4); color: #ffb37a; }
+.carte.pilotage { border-color: rgba(123,79,214,.5); background: rgba(123,79,214,.12); }
+.ico-ordi { background: rgba(36,87,255,.2); color: #8fb0ff; }
+.ico-compo { background: rgba(18,161,80,.2); color: #5fdc93; }
+.ico-peri { background: rgba(255,122,26,.18); color: #ffab6b; }
+#ecran-jeu .negatif, .modal .negatif { color: #ff8a9a; }
+#ecran-jeu .positif, .modal .positif { color: #4ade80; }
+/* fenêtres : même store rayé que l'accueil */
+.modal { background: rgba(5,8,18,.6); }
+.modal-boite { border: 1px solid rgba(255,255,255,.08); }
+.modal-boite::before { content: ""; display: block; flex: none; height: 10px; margin: -22px -22px 4px; background: repeating-linear-gradient(90deg, #ff7a1a 0 30px, #fff1e2 30px 60px); }
