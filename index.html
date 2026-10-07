@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#141b2d">
+  <title>Tycoon Magasin Informatique — prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Accueil -->
+  <section id="ecran-accueil" class="ecran centre">
+    <div class="carte-accueil">
+      <div class="marque">
+        <div class="logo" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 32 32"><path d="M5 12 L7.5 5 H24.5 L27 12 Z" fill="#ff7a1a"/><path d="M9 6 v5 M13.5 6 v5 M18 6 v5 M22.5 6 v5" stroke="#fff" stroke-width="1.6" opacity=".7"/><rect x="6" y="12" width="20" height="14" rx="2" fill="#fff"/><rect x="13" y="17" width="6" height="9" fill="#2457ff"/><rect x="8" y="15" width="4" height="4" fill="#2457ff" opacity=".45"/><rect x="20" y="15" width="4" height="4" fill="#2457ff" opacity=".45"/></svg></div>
+        <div>
+          <p class="sur-titre">Prototype · phase 2 · l'atelier</p>
+          <h1>Tycoon Magasin Informatique</h1>
+        </div>
+      </div>
+      <p class="sous-titre">Ouvre ta boutique, tiens ta trésorerie, fais-la grandir.</p>
+      <div id="bloc-compte" class="bloc-compte"></div>
+      <div id="liste-sauvegardes" class="sauvegardes"></div>
+      <label class="bouton secondaire fichier">Importer une sauvegarde
+        <input type="file" id="importer" accept=".json,application/json" hidden>
+      </label>
+    </div>
+  </section>
+
+  <!-- Compte : connexion, inscription, mot de passe -->
+  <section id="ecran-compte" class="ecran centre" hidden>
+    <div class="carte-accueil">
+      <button class="lien retour" data-compte="retour">← Retour</button>
+      <div class="onglets-compte" role="tablist">
+        <button data-mode="connexion" role="tab">Se connecter</button>
+        <button data-mode="inscription" role="tab">Créer un compte</button>
+      </div>
+      <form id="form-compte" novalidate>
+        <p class="aide" id="compte-intro"></p>
+        <label class="champ" id="champ-email"><span>Email</span><input type="email" id="compte-email" autocomplete="email" required></label>
+        <label class="champ" id="champ-mdp"><span>Mot de passe</span><input type="password" id="compte-mdp" autocomplete="current-password" minlength="6" required></label>
+        <label class="champ" id="champ-mdp2"><span>Confirme le mot de passe</span><input type="password" id="compte-mdp2" autocomplete="new-password" minlength="6"></label>
+        <p class="message-compte" id="compte-message" role="alert"></p>
+        <button class="bouton principal large" type="submit" id="compte-valider">Se connecter</button>
+        <button class="lien" type="button" data-compte="oublie" id="lien-oublie">Mot de passe oublié ?</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Nouvelle partie -->
+  <section id="ecran-nouvelle" class="ecran centre" hidden>
+    <div class="carte-accueil large">
+      <button class="lien retour" data-action="accueil">← Retour</button>
+      <h2>Nouvelle partie <span id="np-emplacement" class="discret"></span></h2>
+      <h3>Où ouvrir ta première boutique ?</h3>
+      <div id="np-villes" class="choix-villes"></div>
+      <h3>Difficulté</h3>
+      <div id="np-difficultes" class="choix-difficulte"></div>
+      <div class="actions-bas">
+        <p id="np-resume" class="discret"></p>
+        <button class="bouton principal" id="np-lancer">Ouvrir la boutique</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Jeu -->
+  <section id="ecran-jeu" class="ecran" hidden>
+    <header class="barre">
+      <div class="bloc-date"><strong id="b-jour"></strong><span><span id="b-heure"></span> · <button class="lien-magasin" id="b-magasin" title="Changer de magasin"></button></span></div>
+      <div class="bloc-chiffre"><span class="etiquette">Trésorerie</span><strong id="b-argent"></strong></div>
+      <div class="bloc-chiffre"><span class="etiquette">Réputation</span>
+        <span class="jauge-rep"><span id="b-rep-barre"></span></span><strong id="b-rep"></strong></div>
+      <div class="vitesses" role="group" aria-label="Vitesse du temps">
+        <button data-vitesse="0" title="Pause (espace)">❚❚</button>
+        <button data-vitesse="1" title="Vitesse normale (1)">×1</button>
+        <button data-vitesse="2" title="Vitesse ×2 (2)">×2</button>
+        <button data-vitesse="3" title="Vitesse ×3 (3)">×3</button>
+      </div>
+      <button class="bouton-menu bouton-afaire" id="b-afaire" title="Ce qui demande ton attention (A)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span class="texte">À faire</span><span class="compteur" id="b-afaire-n" hidden></span></button>
+      <button class="bouton-menu" id="b-vue" title="Revenir à la carte (Échap)">Carte</button>
+      <button class="bouton-menu" id="b-menu" title="Menu">Menu</button>
+    </header>
+    <main class="ecran-carte" id="vue-carte">
+      <div class="zone-carte">
+        <div class="carte-cadre">
+        <svg id="carte" preserveAspectRatio="xMidYMid meet" aria-label="Carte de France"></svg>
+        <div class="camera camera-carte" role="group" aria-label="Zoom de la carte">
+          <button data-zoom="plus" title="Zoomer" aria-label="Zoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button data-zoom="moins" title="Dézoomer" aria-label="Dézoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <button data-zoom="centre" title="Toute la France" aria-label="Toute la France"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+        </div>
+        <p class="legende">Touche un logo pour gérer ce magasin, une ville pour voir son loyer et sa clientèle. Molette ou pincement pour zoomer, glisser pour te déplacer.</p>
+      </div>
+      <aside class="fiche" id="fiche"></aside>
+    </main>
+    <main class="jeu" id="vue-magasin" hidden>
+      <div class="vue">
+        <nav class="pieces" id="pieces" aria-label="Pièces de la boutique">
+          <button data-piece="magasin" title="Magasin : rayons, prix et atelier"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M10 20v-6h4v6"/></svg><span>Magasin</span></button>
+          <button data-piece="reserve" title="Réserve : stock et commandes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg><span>Réserve</span></button>
+          <button data-piece="bureau" title="Bureau : bilan, personnel, pub, local et journal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg><span>Bureau</span></button>
+        </nav>
+        <div id="magasin3d" class="cache" aria-label="Vue 3D du magasin"></div>
+        <svg id="magasin" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" aria-label="Vue du magasin"></svg>
+        <div id="pause-badge" class="pause-badge" hidden>En pause</div>
+        <div class="camera" role="group" aria-label="Caméra du magasin">
+          <button data-cam="plus" title="Zoomer (+)" aria-label="Zoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button data-cam="moins" title="Dézoomer (−)" aria-label="Dézoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <button data-cam="gauche" title="Pivoter vers la gauche (Q)" aria-label="Pivoter vers la gauche"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v6h6"/><path d="M5.5 15a8 8 0 1 0 1.9-8.3L4 10"/></svg></button>
+          <button data-cam="droite" title="Pivoter vers la droite (E)" aria-label="Pivoter vers la droite"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 4v6h-6"/><path d="M18.5 15a8 8 0 1 1-1.9-8.3L20 10"/></svg></button>
+          <button data-cam="3d" class="bouton-3d" title="Vue 3D / 2D (V)" aria-label="Basculer entre la vue 3D et la vue 2D"><b>3D</b></button>
+          <button data-cam="centre" title="Recentrer (R)" aria-label="Recentrer la vue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+        <div class="barre-deco" id="barre-deco" hidden>
+          <div class="infos"><b class="nom"></b><span class="etat"></span></div>
+          <button class="bouton petit" data-deco="tourner" title="Tourner (R)">Tourner</button>
+          <button class="bouton petit principal" data-deco="valider">Poser</button>
+          <button class="bouton petit" data-deco="annuler" title="Annuler (Échap)">Annuler</button>
+        </div>
+        <div class="objectifs" id="objectifs"></div>
+      </div>
+      <aside class="panneau">
+        <nav class="onglets" id="onglets">
+          <button data-onglet="rayons">Rayons</button>
+          <button data-onglet="prix">Prix</button>
+          <button data-onglet="atelier">Atelier</button>
+          <button data-onglet="deco">Déco</button>
+          <button data-onglet="stock">Stock</button>
+          <button data-onglet="commandes">Commandes</button>
+          <button data-onglet="bilan">Bilan</button>
+          <button data-onglet="personnel">Personnel</button>
+          <button data-onglet="pub">Pub</button>
+          <button data-onglet="local">Local</button>
+          <button data-onglet="journal">Journal</button>
+        </nav>
+        <div id="contenu-panneau" class="contenu-panneau"></div>
+      </aside>
+    </main>
+  </section>
+
+  <div id="modal" class="modal" hidden><div class="modal-boite" id="modal-boite"></div></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="data/config.js"></script>
+  <script src="data/produits.js"></script>
+  <script src="data/villes.js"></script>
+  <script src="data/clients.js"></script>
+  <script src="data/evenements.js"></script>
+  <script src="data/deco.js"></script>
+  <script src="data/carte-france.js"></script>
+  <script src="data/carte-deco.js"></script>
+  <script src="src/sim/simulation.js"></script>
+  <script src="lib/supabase.min.js"></script>
+  <script src="src/compte.js"></script>
+  <script src="src/sauvegarde.js"></script>
+  <script src="src/ui/vue-magasin.js"></script>
+  <script src="lib/three.min.js"></script>
+  <script src="src/ui/vue-3d.js"></script>
+  <script src="src/ui/panneaux.js"></script>
+  <script src="src/ui/vue-carte.js"></script>
+  <script src="src/ui/tuto.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
