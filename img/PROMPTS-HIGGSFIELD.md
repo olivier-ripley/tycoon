@@ -10,7 +10,7 @@ Conseils :
 
 Style commun, à coller à la fin de chaque prompt :
 
-> stylized 3D cartoon game art, glossy and bold like a mobile tycoon game, bright saturated colors, soft studio lighting, clean shapes, no text, no watermark
+> stylized 3D cartoon game art, glossy and bold like a mobile tycoon game, NOT photorealistic, bright saturated colors, soft studio lighting, clean shapes, no text, no watermark
 
 ---
 
@@ -31,12 +31,18 @@ Pour ces trois-là, remplace « no text » du style commun par « only the singl
 
 ## 2. Illustrations des dilemmes → `img/dilemmes/`
 
-Format paysage 16:9 (par exemple 1280 × 720), JPG. L'image s'affiche en haut de la fenêtre de décision.
-Décor commun : une petite boutique d'informatique française (rayons de PC portables, écrans, comptoir).
+Format paysage 16:9, JPG. L'image s'affiche en haut de la fenêtre de décision.
+Style : **diorama isométrique façon jeu mobile**, comme la vue 2D de la boutique. Surtout pas de photo réaliste.
+Mets le logo `img/logo-kaouch-tycoon.png` en image de référence, et commence CHAQUE prompt par ce bloc :
+
+> Cute isometric 3D diorama illustration, stylized cartoon game art like a mobile tycoon game, NOT photorealistic. Chunky simplified shapes, smooth plastic-like materials, bright saturated colors, soft lighting, dark navy blue background (#141b2d). Match the colorful glossy style of the reference logo. No text, no letters, no price tags, no watermark. Wide 16:9 composition, scene centered with empty space around.
+> Scene:
+
+puis la scène ci-dessous. Les personnages : grandes proportions cartoon, visages expressifs.
 
 | Fichier | Prompt |
 | --- | --- |
-| `youtubeur.jpg` | A young tech youtuber with a camera on a gimbal and a ring light, filming excitedly inside a small computer store, laptops on shelves behind |
+| `youtubeur.jpg` | a small computer store corner cut out like a diorama (shelves of laptops and boxes, a counter); a cheerful young tech youtuber films himself with a camera on a gimbal and a ring light, waving at the camera |
 | `augmentation.jpg` | A store employee in a blue polo shirt standing nervously in a small back office, holding a sheet of paper, asking the manager for a raise, desk with a computer and coffee mug |
 | `client-mecontent.jpg` | An angry customer at a computer store counter pointing at a scratched laptop, smartphone in the other hand ready to post a bad review, worried salesperson behind the counter |
 | `destockage.jpg` | A delivery van unloading a big pallet of cardboard boxes of computers with large red discount stickers in front of a small computer store, early morning |
