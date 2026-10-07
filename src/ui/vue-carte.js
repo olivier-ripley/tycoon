@@ -414,13 +414,28 @@
       g.addEventListener("click", go);
       g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
     });
+    // Magasins des enseignes concurrentes : un petit logo par enseigne, à côté de la ville
+    var parVille = {};
+    ((s.rivaux && s.rivaux.magasins) || []).forEach(function (r) { (parVille[r.villeId] = parVille[r.villeId] || []).push(r); });
+    Object.keys(parVille).forEach(function (vid) {
+      var v0 = self.villes[vid]; if (!v0) return;
+      var aMoi = self.magasinsParVille[vid] != null, x = v0.pos.x + (aMoi ? 26 : 10), y = v0.pos.y - (aMoi ? 36 : 18);
+      var g = el("g", { class: "c-rivaux", transform: "translate(" + x.toFixed(1) + "," + y.toFixed(1) + ")" }, svg);
+      self.echelle(g, x, y, 1);
+      parVille[vid].forEach(function (r, k) {
+        var ch = TMI.Sim.chaine(r.chaine), b = el("g", { transform: "translate(" + (k * 17) + ",0)" }, g);
+        el("title", {}, b).textContent = ch.nom + " (" + ch.style.toLowerCase() + ") à " + d.villes.filter(function (v) { return v.id === vid; })[0].nom;
+        el("rect", { x: -8, y: -8, width: 16, height: 16, rx: 4.5, fill: ch.couleur, stroke: "#fff", "stroke-width": 2, opacity: (0.55 + r.force / 220).toFixed(2) }, b);
+        var t = el("text", { "text-anchor": "middle", y: 3.8, "font-size": 10.5, "font-weight": 800, fill: "#fff", class: "svg-texte" }, b); t.textContent = ch.initiale;
+      });
+    });
     this.posM = s.magasins.map(function (x, i) { return self.villes[TMI.Sim.magasin(s, i).villeId].pos; });
     this.actifIdx = s.actif;
     this.marqueur = this.marqueurs[s.actif].g;
     this.appliquer();
     this.choisir(null);
   };
-  function cleMagasins(s) { return s.actif + ":" + s.magasins.map(function (x, i) { return TMI.Sim.magasin(s, i).villeId; }).join(",") + "|" + Object.keys(s.entrepots || {}).join(","); }
+  function cleMagasins(s) { return s.actif + ":" + s.magasins.map(function (x, i) { return TMI.Sim.magasin(s, i).villeId; }).join(",") + "|" + Object.keys(s.entrepots || {}).join(",") + "|" + ((s.rivaux && s.rivaux.magasins) || []).map(function (r) { return r.id; }).join(","); }
 
   VueCarte.prototype.choisir = function (villeId) {
     var prec = this.selection && this.villes[this.selection];

@@ -7,7 +7,7 @@ const path = require("path");
 const vm = require("vm");
 
 const racine = path.join(__dirname, "..");
-const fichiers = ["data/config.js", "data/produits.js", "data/villes.js", "data/clients.js", "data/evenements.js", "data/deco.js", "src/sim/simulation.js"];
+const fichiers = ["data/config.js", "data/produits.js", "data/villes.js", "data/clients.js", "data/evenements.js", "data/deco.js", "data/concurrents.js", "src/sim/simulation.js"];
 function charger() {
   const ctx = { console, Math, Date, JSON };
   ctx.window = ctx;

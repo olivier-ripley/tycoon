@@ -10,7 +10,7 @@ const racine = path.join(__dirname, "..");
 const ctx = { console, Math, Date, JSON };
 ctx.window = ctx;
 vm.createContext(ctx);
-["data/config.js", "data/produits.js", "data/villes.js", "data/clients.js", "data/evenements.js", "data/deco.js", "src/sim/simulation.js"]
+["data/config.js", "data/produits.js", "data/villes.js", "data/clients.js", "data/evenements.js", "data/deco.js", "data/concurrents.js", "src/sim/simulation.js"]
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(racine, f), "utf8"), ctx, { filename: f }));
 
 const Sim = ctx.TMI.Sim;

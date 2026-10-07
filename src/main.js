@@ -965,6 +965,24 @@
         var lg = b.closest(".envoi"), q2 = +lg.querySelector('[data-role="qte"]').value, dest = +lg.querySelector('[data-role="dest"]').value;
         apres(Sim.transferer(etat, b.dataset.region, dest, b.dataset.prod, q2), "Transfert parti.");
       }
+      if (b.dataset.fiche === "racheter") {
+        var cr = Sim.conditionsRachat(etat, b.dataset.id), ch = Sim.chaine(cr.rival.chaine), vr = Sim.villeParId(cr.rival.villeId);
+        var texteR = cr.reprise
+          ? "Tu paies " + P.euros(cr.total) + " (rachat " + P.euros(cr.prix) + ", dépôt de garantie et premier loyer). Le magasin " + ch.nom + " ferme et son local devient le tien : pas d'aménagement à payer. Il faudra ensuite embaucher une équipe et commander du stock."
+          : "Tu paies " + P.euros(cr.prix) + ". Le magasin " + ch.nom + " de " + vr.nom + " ferme, ses clients viennent chez toi et ta réputation y gagne " + DATA.concurrents.rachat.reputation + " points.";
+        confirmer("Racheter " + ch.nom + " à " + vr.nom + " ?", texteR, "Racheter", function () {
+          var r = Sim.racheterRival(etat, b.dataset.id);
+          if (!r.ok) return toast(r.raison, "alerte");
+          traiterEvenements();
+          carte.construire(etat);
+          if (r.reprise) {
+            villeVue = null; ficheIdx = null;
+            ouvrirModal("<h2>" + P.esc(vr.nom) + " est à toi</h2><p>Tu as repris le local de " + P.esc(ch.nom) + ". Le magasin est prêt, mais vide : commence par le bureau pour embaucher, puis la réserve pour commander.</p>",
+              [{ texte: "Plus tard" }, { texte: "Gérer ce magasin", style: "principal", action: function () { changerMagasin(r.index, "bureau", "personnel"); montrerVue("magasin"); } }]);
+          }
+          majBarre(); majFiche(true); sauver();
+        });
+      }
       if (b.dataset.fiche === "voir") { ficheIdx = +b.dataset.i; majFiche(); }
       if (b.dataset.fiche === "ouvrir") {
         var v = Sim.villeParId(b.dataset.ville), co = Sim.conditionsOuverture(etat, v.id);

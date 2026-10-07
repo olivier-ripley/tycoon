@@ -649,6 +649,7 @@
     if (vides.length) alertes.push(vides.length + " rayon" + (vides.length > 1 ? "s vides" : " vide") + " : " + vides.map(function (p) { return Sim.produit(p).nom; }).join(", ") + ".");
     var h = "<div><h2>" + (plusieurs ? "Ton magasin" : "Ta boutique") + " à " + esc(v.nom) + '</h2><p class="sous">' + esc(d.regions[v.region] || "") + " · " + esc(d.typesVilles[v.type].nom) + " · " + esc(Sim.local(s).nom.toLowerCase()) + " · loyer " + euros(Sim.loyerLocal(s)) + " / mois</p></div>";
     if (Sim.ferme(s)) alertes.unshift("Déménagement en cours : la boutique rouvre le jour " + (s.fermeJusqu + 2) + ".");
+    Sim.soldesVille(s0, s.villeId).forEach(function (x) { alertes.push(Sim.chaine(x.chaine).nom + " fait des soldes ici jusqu'au jour " + (x.fin + 1) + " : moins de clients. Une pub peut compenser."); });
     h += '<div class="chiffres">' +
       '<div class="chiffre"><span>Trésorerie' + (plusieurs ? " (enseigne)" : "") + '</span><b class="' + (s.argent < 0 ? "negatif" : "") + '">' + euros(s.argent) + "</b></div>" +
       '<div class="chiffre"><span>Réputation</span><b>' + Math.round(s.reputation) + " / 100</b></div>" +
@@ -661,6 +662,7 @@
     h += '<p class="aide">Catalogue : ' + ["entrée de gamme", "entrée et milieu de gamme", "toutes les gammes"][go - 1] + ".</p>";
     h += '<button class="bouton principal" data-fiche="gerer" data-i="' + idx + '">Gérer ' + (plusieurs ? "le magasin de " + esc(v.nom) : "le magasin") + "</button>";
     h += '<p class="aide">Équipe : ' + (s.employes.length ? s.employes.map(function (e) { return esc(e.nom) + " (" + d.config.postes[e.poste].nom.toLowerCase() + ")"; }).join(", ") : "personne") + ".</p>";
+    h += blocConcurrents(s0, s.villeId);
     return h + blocEnseigne(s0, idx);
   }
   // L'enseigne : palier, magasins, prochaine étape
@@ -693,11 +695,43 @@
     }
     if (pal >= 4) h += '<p class="aide"><b>Mode libre</b> : tu es leader national depuis le jour ' + ((s.victoire ? s.victoire.jour : s.jour) + 1) + ". Continue à faire grandir l'enseigne.</p>";
     if (pal >= 3) h += '<button class="bouton" data-fiche="logistique">Logistique : entrepôts et flotte</button>';
+    if (d.concurrents) {
+      h += '<h3>Le marché</h3><div class="liste">' + Sim.marche(s).map(function (m) {
+        return '<div class="ligne rival">' + logoRival(m.chaine) + '<div><div class="titre">' + esc(m.chaine.nom) + ' <span class="etat">' + esc(m.chaine.style) + "</span></div>" +
+          '<div class="detail">' + m.total + " magasin" + (m.total > 1 ? "s" : "") + " en France · " + (m.chezToi ? m.chezToi + " dans tes villes" : "aucun dans tes villes") + "</div></div></div>";
+      }).join("") + "</div>";
+    }
     var x = c.expansion;
     var pret = (s.stats.moisPositifs || 0) >= x.moisPositifs && Sim.reputationMax(s) >= x.reputation;
     h += '<p class="aide">' + (pret ? "Tu peux ouvrir un nouveau magasin : touche une ville sur la carte."
       : "Pour ouvrir un autre magasin : " + x.moisPositifs + " mois positifs (" + (s.stats.moisPositifs || 0) + " pour l'instant) et " + x.reputation + " de réputation dans un magasin (meilleure : " + Math.round(Sim.reputationMax(s)) + ").") + "</p>";
     return h + "</div>";
+  }
+  // ------------------------------------------------------------ Concurrents d'une ville
+  function logoRival(ch) { return '<span class="logo-rival" style="--c:' + ch.couleur + '" aria-hidden="true">' + esc(ch.initiale) + "</span>"; }
+  function blocConcurrents(s, villeId) {
+    var Sim = TMI.Sim, d = D(), C = d.concurrents;
+    if (!C) return "";
+    var l = Sim.rivauxVille(s, villeId), so = Sim.soldesVille(s, villeId), v = Sim.villeParId(villeId);
+    var h = "<h3>Concurrents à " + esc(v.nom) + "</h3>";
+    if (!l.length) return h + '<p class="aide">Aucune grande enseigne ici : seulement quelques petits indépendants.</p>';
+    var raisons = [];
+    h += '<div class="liste">';
+    l.forEach(function (r) {
+      var ch = Sim.chaine(r.chaine), co = Sim.conditionsRachat(s, r.id), solde = so.some(function (x) { return x.chaine === r.chaine; });
+      var niveau = r.force >= 70 ? "très implanté" : r.force >= 45 ? "bien implanté" : r.force >= 25 ? "fragile" : "au bord de la fermeture";
+      co.raisons.forEach(function (x) { if (raisons.indexOf(x) < 0) raisons.push(x); });
+      h += '<div class="ligne rival">' + logoRival(ch) + '<div><div class="titre">' + esc(ch.nom) + ' <span class="etat">' + esc(ch.style) + "</span>" + (solde ? ' <span class="etat alerte">en soldes</span>' : "") + "</div>" +
+        '<div class="detail">' + esc(ch.texte) + "</div>" +
+        '<div class="detail"><span class="mini-jauge"><span style="width:' + Math.round(r.force) + "%;background:" + ch.couleur + '"></span></span> ' + niveau + " · lui prend environ " + Math.round(ch.impact * r.force / 50 * 100) + " % des clients</div></div>" +
+        '<div class="droite"><button class="bouton petit" data-fiche="racheter" data-id="' + r.id + '"' + (co.ok ? "" : " disabled") + ">Racheter · " + euros(co.total) + "</button></div></div>";
+    });
+    h += "</div>";
+    var chezToi = s.magasins.some(function (x, i) { return Sim.magasin(s, i).villeId === villeId; });
+    h += '<p class="aide">' + (chezToi ? "Une réputation au-dessus de 50 affaiblit les concurrents chaque mois, jusqu'à les faire fermer. Racheter un magasin le ferme tout de suite et fait monter ta réputation ici."
+      : "Racheter un magasin rival le ferme et te donne son local : tu ouvres ici sans payer l'aménagement.") +
+      (raisons.length ? " Pour l'instant : " + esc(raisons.join(" ; ")) + "." : "") + "</p>";
+    return h;
   }
   function ficheVille(s, villeId) {
     var d = D(), v = d.villes.filter(function (x) { return x.id === villeId; })[0], tv = d.typesVilles[v.type];
@@ -706,9 +740,10 @@
     h += '<div class="chiffres">' +
       '<div class="chiffre"><span>Loyer petit local</span><b>' + euros(v.loyer) + "</b></div>" +
       '<div class="chiffre"><span>Clients par jour</span><b>≈ ' + tv.clientsParJour + "</b></div>" +
-      '<div class="chiffre"><span>Concurrence</span><b>' + Math.round(tv.concurrence * 100) + " %</b></div>" +
+      '<div class="chiffre"><span>Concurrence</span><b>' + Math.round(Sim.concurrenceVille(s, villeId) * 100) + " %</b></div>" +
       '<div class="chiffre"><span>Clientèle</span><b>' + esc(d.profilsClients[v.profil].nom) + "</b></div>" +
       "</div>";
+    h += blocConcurrents(s, villeId);
     var co = Sim.conditionsOuverture(s, villeId);
     h += "<h3>Ouvrir un magasin ici</h3>";
     h += '<table class="bilan"><tbody>' +

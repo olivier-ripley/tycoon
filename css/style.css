@@ -740,3 +740,11 @@ svg .tuto-cible, .marqueur-boutique.tuto-cible { outline: none !important; anima
 .modal { background: rgba(5,8,18,.6); }
 .modal-boite { border: 1px solid rgba(255,255,255,.08); }
 .modal-boite::before { content: ""; display: block; flex: none; height: 10px; margin: -22px -22px 4px; background: repeating-linear-gradient(90deg, #ff7a1a 0 30px, #fff1e2 30px 60px); }
+
+/* ============================================================ Enseignes concurrentes */
+.logo-rival { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--c); color: #fff;
+  font-family: var(--titre); font-weight: 800; font-size: 15px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.2); }
+.ligne.rival { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+.ligne.rival .droite { grid-column: 2; justify-content: flex-start; }
+.ligne.rival .detail .mini-jauge { margin-right: 4px; }
+.c-rivaux { pointer-events: auto; cursor: help; }

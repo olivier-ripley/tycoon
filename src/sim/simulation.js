@@ -170,6 +170,7 @@
     noter(s, "Ouverture de ta boutique à " + v.nom + ". Dépôt de garantie et aménagement : " + (depot + loc.amenagement) + " €.", "info");
     s.ouvertLe = 0; s.palier = 1;
     initMagasins(s);
+    initRivaux(s);
     return s;
   }
   function nouveauMois() {
@@ -191,6 +192,7 @@
     migrerAncien(s);
     if (s.palier == null) s.palier = 1;
     initMagasins(s);
+    initRivaux(s);
     return s;
   }
   function migrerAncien(s) {
@@ -442,15 +444,18 @@
     ranger(s); s.actif = i; charger(s, i);
   }
   // Conditions et coût pour ouvrir un magasin dans une ville
-  function conditionsOuverture(s, villeId) {
+  // opts.rachat : prix de rachat d'un magasin rival (on reprend son local : ni aménagement ni frais d'ouverture)
+  function conditionsOuverture(s, villeId, opts) {
     var c = D().config, x = c.expansion, v = villeParId(villeId), loc = c.locaux.petit;
+    opts = opts || {};
     var r = { ok: true, raisons: [] };
     if (!v) return { ok: false, raisons: ["Ville inconnue."] };
     if (s.magasins.some(function (m, i) { return magasin(s, i).villeId === villeId; })) { r.ok = false; r.raisons.push("Tu as déjà un magasin ici."); }
     if ((s.stats.moisPositifs || 0) < x.moisPositifs) { r.ok = false; r.raisons.push(x.moisPositifs + " mois positifs (tu en as " + (s.stats.moisPositifs || 0) + ")"); }
     if (reputationMax(s) < x.reputation) { r.ok = false; r.raisons.push(x.reputation + " de réputation dans un de tes magasins (meilleure : " + Math.round(reputationMax(s)) + ")"); }
-    r.cout = { depot: v.loyer * loc.depotMoisLoyer, amenagement: loc.amenagement, premierLoyer: v.loyer + loc.charges, frais: x.fraisOuverture || 0 };
-    r.cout.total = r.cout.depot + r.cout.amenagement + r.cout.premierLoyer + r.cout.frais;
+    r.cout = { depot: v.loyer * loc.depotMoisLoyer, amenagement: opts.rachat != null ? 0 : loc.amenagement, premierLoyer: v.loyer + loc.charges,
+               frais: opts.rachat != null ? 0 : x.fraisOuverture || 0, rachat: opts.rachat || 0 };
+    r.cout.total = r.cout.depot + r.cout.amenagement + r.cout.premierLoyer + r.cout.frais + r.cout.rachat;
     var derniere = Math.max.apply(null, s.magasins.map(function (m, i) { return magasin(s, i).ouvertLe || 0; }));
     var delai = Math.round((x.delaiEntreOuvertures || 0) * (c.difficultes[s.difficulte].rythme || 1));
     if (s.magasins.length > 1 && delai && s.jour - derniere < delai) {
@@ -460,8 +465,10 @@
     if (s.argent < r.cout.total) { r.ok = false; r.raisons.push("Trésorerie : " + r.cout.total + " € nécessaires"); }
     return r;
   }
-  function ouvrirMagasin(s, villeId) {
-    var co = conditionsOuverture(s, villeId);
+  // opts.rachat / opts.depuis : reprise du local d'un magasin rival racheté (voir racheterRival)
+  function ouvrirMagasin(s, villeId, opts) {
+    opts = opts || {};
+    var co = conditionsOuverture(s, villeId, opts);
     if (!co.ok) return { ok: false, raison: "Pas encore possible : " + co.raisons.join(" ; ") + "." };
     var c = D().config, loc = c.locaux.petit, v = villeParId(villeId);
     ranger(s);
@@ -477,11 +484,13 @@
     s.magasins.push(m);
     var i = s.magasins.length - 1;
     charger(s, i);
-    s.argent -= co.cout.depot + loc.amenagement + co.cout.frais;
-    s.mois.installation = co.cout.depot + loc.amenagement + co.cout.frais;
+    var installation = co.cout.depot + co.cout.amenagement + co.cout.frais + co.cout.rachat;
+    s.argent -= installation;
+    s.mois.installation = installation;
     payerLoyerEtCharges(s);
     renouvelerCandidats(s);
-    noter(s, "Nouveau magasin à " + v.nom + " : dépôt, aménagement et premier loyer " + co.cout.total + " €. Embauche une équipe et remplis les rayons !", "bon");
+    if (opts.depuis) noter(s, "Tu rachètes le magasin " + opts.depuis + " de " + v.nom + " et reprends son local : rachat, dépôt et premier loyer " + co.cout.total + " €. Embauche une équipe et remplis les rayons !", "bon");
+    else noter(s, "Nouveau magasin à " + v.nom + " : dépôt, aménagement et premier loyer " + co.cout.total + " €. Embauche une équipe et remplis les rayons !", "bon");
     ranger(s);
     charger(s, s.actif);
     verifierPalier(s);
@@ -504,6 +513,149 @@
     var nomReg = D().regions[reg];
     noter(s, "Palier 2 atteint : « " + D().config.paliers[2].nom + " ». Ton enseigne compte trois magasins en " + nomReg + ".", "bon");
     s.evenements.push({ type: "palier", palier: 2, region: nomReg });
+  }
+
+  // ---------------------------------------------------------------- Enseignes concurrentes
+  // Des magasins rivaux (MégaPC, TechnoPlus, Info Proxi…) dans les villes : ils prennent des clients,
+  // se renforcent, ouvrent ailleurs, ferment quand ta réputation les étouffe, et peuvent être rachetés.
+  // Ils appartiennent à l'enseigne : s.rivaux reste au premier niveau de l'état.
+  function CONC() { return D().concurrents; }
+  function chaine(id) { return CONC().chaines.filter(function (c) { return c.id === id; })[0]; }
+  function initRivaux(s) {
+    if (s.rivaux || !CONC()) return;
+    var C = CONC();
+    s.rivaux = { magasins: [], soldes: [], prochainId: 1 };
+    D().villes.forEach(function (v) {
+      var n = C.depart[v.type] || 0, nb = Math.floor(n) + (rng(s) < n - Math.floor(n) ? 1 : 0);
+      for (var k = 0; k < Math.min(nb, C.maxParVille); k++) {
+        var r = installerRival(s, v.id, choisirChaine(s, v));
+        if (r && v.id === s.villeId && C.forceDepartChezToi) r.force = Math.min(r.force, C.forceDepartChezToi);
+      }
+    });
+  }
+  function choisirChaine(s, v) {
+    var poids = {}, presents = rivauxVille(s, v.id).map(function (r) { return r.chaine; });
+    CONC().chaines.forEach(function (c) { if (presents.indexOf(c.id) < 0) poids[c.id] = c.villes[v.type] || 0.01; });
+    return Object.keys(poids).length ? tirerPoids(s, poids) : null;
+  }
+  function installerRival(s, villeId, chaineId) {
+    if (!chaineId) return null;
+    var f = CONC().forceDepart, r = { id: "r" + (s.rivaux.prochainId++), chaine: chaineId, villeId: villeId, force: Math.round(entre(s, f[0], f[1])), depuis: s.jour };
+    s.rivaux.magasins.push(r);
+    return r;
+  }
+  function rivauxVille(s, villeId) { return s.rivaux ? s.rivaux.magasins.filter(function (r) { return r.villeId === villeId; }) : []; }
+  function soldesVille(s, villeId) { return s.rivaux ? s.rivaux.soldes.filter(function (x) { return x.villeId === villeId && x.fin >= s.jour; }) : []; }
+  // Concurrence d'une ville (0 à 0,9) : indépendants + magasins rivaux + soldes en cours
+  function concurrenceVille(s, villeId) {
+    var d = D(), c = d.config, v = villeParId(villeId), tv = d.typesVilles[v.type], C = CONC();
+    var base = tv.concurrence * (C ? 1 - C.partRivaux : 1) + c.difficultes[s.difficulte].concurrence;
+    rivauxVille(s, villeId).forEach(function (r) { base += chaine(r.chaine).impact * r.force / 50; });
+    if (soldesVille(s, villeId).length) base += C.soldes.impact;
+    return borne(base, 0, 0.9);
+  }
+  // Les clients d'une ville où un discounteur est installé comparent davantage les prix
+  function pressionPrix(s, villeId) {
+    return rivauxVille(s, villeId).reduce(function (a, r) { return a * (1 + (chaine(r.chaine).pressionPrix || 0) * r.force / 50); }, 1);
+  }
+  function magasinDansVille(s, villeId) {
+    for (var i = 0; i < s.magasins.length; i++) if (magasin(s, i).villeId === villeId) return i;
+    return -1;
+  }
+  function rivauxDuMois(s) {
+    initRivaux(s);
+    if (!s.rivaux) return;
+    var C = CONC(), R = s.rivaux, diff = D().config.difficultes[s.difficulte];
+    var grace = s.jour < (C.graceMois || 0) * D().config.temps.joursParMois;   // début de partie : on laisse le joueur s'installer
+    // 1. Force : elle monte doucement, sauf là où ta réputation dépasse 50
+    R.magasins.forEach(function (r) {
+      var i = magasinDansVille(s, r.villeId), delta = C.croissance + entre(s, -C.hasard, C.hasard);
+      if (i >= 0) delta -= (magasin(s, i).reputation - 50) * C.pressionReputation;
+      r.force = borne(r.force + delta, 0, 100);
+    });
+    // 2. Fermetures
+    R.magasins = R.magasins.filter(function (r) {
+      if (r.force >= C.forceFermeture) return true;
+      var v = villeParId(r.villeId), ch = chaine(r.chaine), chezToi = magasinDansVille(s, r.villeId) >= 0;
+      noter(s, ch.nom + " ferme son magasin de " + v.nom + (chezToi ? " : ses clients viennent chez toi." : "."), chezToi ? "bon" : "info");
+      if (chezToi) s.evenements.push({ type: "bon", texte: ch.nom + " ferme son magasin de " + v.nom + " : ses clients viennent chez toi !" });
+      return false;
+    });
+    // 3. Ouvertures : de préférence dans les grandes villes et là où tu es installé
+    C.chaines.forEach(function (ch) {
+      if (rng(s) >= C.ouvertureParMois * (diff.rythme || 1)) return;
+      var poids = {};
+      D().villes.forEach(function (v) {
+        var ici = rivauxVille(s, v.id);
+        if (ici.length >= C.maxParVille || ici.some(function (r) { return r.chaine === ch.id; })) return;
+        var chezToi = magasinDansVille(s, v.id) >= 0;
+        if (grace && chezToi) return;
+        poids[v.id] = (C.poidsVilles[v.type] || 1) * (ch.villes[v.type] || 0.1) * (chezToi ? C.attraitTesVilles : 1);
+      });
+      if (!Object.keys(poids).length) return;
+      var vid = tirerPoids(s, poids), v = villeParId(vid), chezToi = magasinDansVille(s, vid) >= 0;
+      installerRival(s, vid, ch.id);
+      noter(s, ch.nom + " ouvre un magasin à " + v.nom + ".", chezToi ? "alerte" : "info");
+      if (chezToi) s.evenements.push({ type: "alerte", texte: ch.nom + " ouvre un magasin à " + v.nom + " : la concurrence se renforce chez toi." });
+    });
+    // 4. Soldes d'un rival dans une de tes villes
+    R.soldes = R.soldes.filter(function (x) { return x.fin >= s.jour; });
+    if (!grace) s.magasins.forEach(function (x, i) {
+      var vid = magasin(s, i).villeId, ici = rivauxVille(s, vid);
+      if (!ici.length || soldesVille(s, vid).length || rng(s) >= C.soldes.chanceParVille) return;
+      var r = ici[Math.floor(rng(s) * ici.length)], ch = chaine(r.chaine), v = villeParId(vid);
+      R.soldes.push({ villeId: vid, chaine: r.chaine, debut: s.jour + 1, fin: s.jour + C.soldes.jours });
+      noter(s, ch.nom + " lance des soldes à " + v.nom + " pendant " + C.soldes.jours + " jours : moins de clients chez toi. Une pub peut compenser.", "alerte");
+      s.evenements.push({ type: "alerte", texte: ch.nom + " lance des soldes à " + v.nom + " pendant " + C.soldes.jours + " jours." });
+    });
+  }
+  // Rachat d'un magasin rival : il ferme (ta réputation monte si tu es dans la ville), ou tu reprends son local
+  function prixRachat(s, rivalId) {
+    var r = s.rivaux && s.rivaux.magasins.filter(function (x) { return x.id === rivalId; })[0];
+    if (!r) return null;
+    var A = CONC().rachat;
+    return Math.round((A.base + r.force * A.parForce + villeParId(r.villeId).loyer * A.moisLoyer) / 100) * 100;
+  }
+  function conditionsRachat(s, rivalId) {
+    var r = s.rivaux && s.rivaux.magasins.filter(function (x) { return x.id === rivalId; })[0], A = CONC().rachat;
+    if (!r) return { ok: false, raisons: ["Ce magasin n'existe plus."] };
+    var res = { ok: true, raisons: [], rival: r, prix: prixRachat(s, rivalId), reprise: magasinDansVille(s, r.villeId) < 0 };
+    if ((s.palier || 1) < A.palierMin) { res.ok = false; res.raisons.push("Rachat possible au palier " + A.palierMin + " (« " + D().config.paliers[A.palierMin].nom + " »)"); }
+    if (res.reprise) {   // reprendre le local = ouvrir un magasin : mêmes conditions, sans aménagement ni frais d'ouverture
+      var co = conditionsOuverture(s, r.villeId, { rachat: res.prix });
+      res.cout = co.cout;
+      co.raisons.forEach(function (x) { if (!/^Trésorerie/.test(x)) { res.ok = false; res.raisons.push(x); } });
+      res.total = co.cout.total;
+    } else res.total = res.prix;
+    if (s.argent < res.total) { res.ok = false; res.raisons.push("Trésorerie : " + res.total + " € nécessaires"); }
+    return res;
+  }
+  function racheterRival(s, rivalId) {
+    var co = conditionsRachat(s, rivalId);
+    if (!co.ok) return { ok: false, raison: "Pas encore possible : " + co.raisons.join(" ; ") + "." };
+    var r = co.rival, ch = chaine(r.chaine), v = villeParId(r.villeId);
+    s.rivaux.magasins.splice(s.rivaux.magasins.indexOf(r), 1);
+    s.rivaux.soldes = s.rivaux.soldes.filter(function (x) { return !(x.villeId === r.villeId && x.chaine === r.chaine); });
+    if (co.reprise) {
+      var o = ouvrirMagasin(s, r.villeId, { rachat: co.prix, depuis: ch.nom });
+      if (!o.ok) { s.rivaux.magasins.push(r); return o; }
+      return { ok: true, index: o.index, reprise: true };
+    }
+    s.argent -= co.prix;
+    var i = magasinDansVille(s, r.villeId), mg = magasin(s, i);
+    mg.reputation = borne(mg.reputation + CONC().rachat.reputation, 0, 100);
+    s.investiRachats = (s.investiRachats || 0) + co.prix;
+    noter(s, "Tu rachètes le magasin " + ch.nom + " de " + v.nom + " pour " + co.prix + " € : il ferme, ses clients viennent chez toi.", "bon");
+    return { ok: true, index: i, reprise: false };
+  }
+  // Nombre de magasins de chaque enseigne (pour la fiche de l'enseigne)
+  function marche(s) {
+    initRivaux(s);
+    var mes = {}; s.magasins.forEach(function (x, i) { mes[magasin(s, i).villeId] = true; });
+    return CONC().chaines.map(function (ch) {
+      var l = s.rivaux.magasins.filter(function (r) { return r.chaine === ch.id; });
+      return { chaine: ch, total: l.length, chezToi: l.filter(function (r) { return mes[r.villeId]; }).length };
+    });
   }
 
   // ---------------------------------------------------------------- Logistique (palier 3)
@@ -971,7 +1123,7 @@
       return partir(s, cl, "introuvable");
     }
     var prix = prixVente(s, p), ratio = prix / prixMarche(s, p);
-    var facteurPrix = ratio > 1 ? Math.exp(-pr.sensibilitePrix * modifs(s).sensibilite * (ratio - 1)) : Math.min(1.25, 1 + (1 - ratio) * 1.5);
+    var facteurPrix = ratio > 1 ? Math.exp(-pr.sensibilitePrix * modifs(s).sensibilite * pressionPrix(s, s.villeId) * (ratio - 1)) : Math.min(1.25, 1 + (1 - ratio) * 1.5);
     var chance = pr.conversion * facteurPrix;
     if (vendeur) chance *= 1.15 + 0.05 * vendeur.niveau;
     var amb = ambiance(s);
@@ -1026,7 +1178,7 @@
   function aUnTechnicien(s) { return s.employes.some(function (e) { return e.poste === "technicien"; }); }
   function tauxDemandes(s) {
     var d = D(), c = d.config, v = ville(s), tv = d.typesVilles[v.type];
-    var concurrence = borne(tv.concurrence + c.difficultes[s.difficulte].concurrence, 0, 0.9);
+    var concurrence = concurrenceVille(s, s.villeId);
     var rep = 0.4 + 1.2 * s.reputation / 100;
     return tv.clientsParJour * (1 - concurrence) * rep * M().attraitProfil[v.profil] * M().demandesParClient *
       c.temps.affluenceJour[s.jour % 7] * (1 + effetPubAtelier(s)) / (c.temps.fermeture - c.temps.ouverture);
@@ -1216,7 +1368,7 @@
   // Clients de plus par jour qu'apporterait une campagne (estimation affichée au joueur)
   function estimationPub(s, type, budget, jours) {
     var d = D(), c = d.config, v = ville(s), tv = d.typesVilles[v.type];
-    var concurrence = borne(tv.concurrence + c.difficultes[s.difficulte].concurrence, 0, 0.9);
+    var concurrence = concurrenceVille(s, s.villeId);
     var base = tv.clientsParJour * (1 - concurrence) * (0.4 + 1.2 * s.reputation / 100);
     var e = effetBrut(s, type, budget / jours);
     return { effet: e, clientsJour: base * e, baseJour: base, budgetJour: budget / jours };
@@ -1264,7 +1416,7 @@
   function acceptationTarif(ratio) { return ratio <= 1 ? 1 : Math.exp(-R().sensibilitePrix * (ratio - 1)); }
   function tauxReparations(s) {
     var d = D(), c = d.config, v = ville(s), tv = d.typesVilles[v.type];
-    var concurrence = borne(tv.concurrence + c.difficultes[s.difficulte].concurrence, 0, 0.9);
+    var concurrence = concurrenceVille(s, s.villeId);
     var rep = 0.4 + 1.2 * s.reputation / 100;
     return tv.clientsParJour * (1 - concurrence) * rep * R().demandesParClient * c.temps.affluenceJour[s.jour % 7] * (1 + effetPubAtelier(s)) / (c.temps.fermeture - c.temps.ouverture);
   }
@@ -1420,7 +1572,7 @@
   // ---------------------------------------------------------------- Une minute de jeu
   function tauxArrivee(s) {
     var d = D(), c = d.config, v = ville(s), tv = d.typesVilles[v.type];
-    var concurrence = borne(tv.concurrence + c.difficultes[s.difficulte].concurrence, 0, 0.9);
+    var concurrence = concurrenceVille(s, s.villeId);
     var rep = 0.4 + 1.2 * s.reputation / 100;
     var minutesOuvertes = c.temps.fermeture - c.temps.ouverture;
     // pointe en milieu de journée et en fin d'après-midi
@@ -1647,6 +1799,7 @@
     s.evenements.push({ type: "bilan", bilan: details.length === 1 && !total.logistique && !total.siege ? details[0].bilan : total, details: details, total: total });
     verifierPalier3(s);
     verifierDeblocages(s);
+    rivauxDuMois(s);
 
     if (s.argent < 0) {
       if (diff.faillite === "pret" && (s.dette || 0) < (c.pret.detteMax || Infinity)) {
@@ -1741,6 +1894,8 @@
     commanderEntrepot: commanderEntrepot, transferer: transferer, prixGros: prixGros, capaciteDispo: capaciteDispo,
     unitesEntrepot: unitesEntrepot, coutEntrepot: coutEntrepot, initLog: initLog, reputationMax: reputationMax, villeParId: villeParId,
     synchroniser: function (s) { migrer(s); ranger(s); },
+    rivauxVille: rivauxVille, soldesVille: soldesVille, concurrenceVille: concurrenceVille, chaine: chaine, marche: marche,
+    prixRachat: prixRachat, conditionsRachat: conditionsRachat, racheterRival: racheterRival, initRivaux: initRivaux,
     gammesOuvertes: gammesOuvertes, disponible: disponible, conditionGamme: conditionGamme, valeurStock: valeurStock, vider: vider, tauxArrivee: tauxArrivee
   };
 })(typeof window !== "undefined" ? window : globalThis);
