@@ -31,7 +31,7 @@ Pour ces trois-là, remplace « no text » du style commun par « only the singl
 
 ## 2. Illustrations des dilemmes → `img/dilemmes/`
 
-Format paysage 16:9, JPG. L'image s'affiche en haut de la fenêtre de décision.
+Format paysage 16:9 (fond blanc : je le retire ensuite). L'image s'affiche en haut de la fenêtre de décision.
 Style : **diorama isométrique façon jeu mobile**, comme la vue 2D de la boutique. Surtout pas de photo réaliste.
 Mets le logo `img/logo-kaouch-tycoon.png` en image de référence, et commence CHAQUE prompt par ce bloc :
 

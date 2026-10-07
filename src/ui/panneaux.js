@@ -27,7 +27,7 @@
     }
     return images[src];
   }
-  function imageDilemme(x) { return x.image === false ? null : x.image || (D().dilemmes.dossierImages || "img/dilemmes/") + x.id + ".jpg"; }
+  function imageDilemme(x) { return x.image === false ? null : x.image || (D().dilemmes.dossierImages || "img/dilemmes/") + x.id + (D().dilemmes.extensionImages || ".webp"); }
   (function () {
     var d = D();
     ((d.concurrents && d.concurrents.chaines) || []).forEach(function (ch) { image(ch.logo); });
