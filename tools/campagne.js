@@ -38,11 +38,22 @@ function partie(villeId, difficulte, graine, annees) {
       const id = o[0] + "_" + Math.min(o[1], g);
       if (vus[id]) return; vus[id] = true; choix.push(id); cible[id] = Math.ceil(o[2] * Math.max(1, D.typesVilles[D.villes.find(v => v.id === s.villeId).type].clientsParJour / 26));
     });
-    choix.forEach((id, i) => { if (s.rayons[i] !== id) Sim.placerRayon(s, i, id); });
+    // Un rayon qui a encore du stock est écoulé avant de passer au produit suivant (nouvelle gamme) :
+    // sinon le stock d'entrée de gamme reste en réserve, invendable, et immobilise la trésorerie.
+    choix.forEach((id, i) => {
+      const actuel = s.rayons[i];
+      if (actuel === id) return;
+      if (actuel && (s.stock[actuel] || 0) > 0 && choix.indexOf(actuel) < 0) { choix[i] = null; return; }
+      Sim.placerRayon(s, i, id);
+    });
+    // Réserve : les salaires du mois sont prélevés en fin de mois, on garde de quoi les payer
+    // (sinon, en grande ville, le stock absorbe toute la trésorerie et le mois finit dans le rouge).
+    const reserve = 3000 + s.employes.reduce((a, e) => a + e.salaire, 0);
     choix.forEach(id => {
+      if (!id) return;
       const enCours = s.commandes.filter(c => c.prodId === id && !c.pourJob).reduce((a, c) => a + c.qte, 0);
-      const manque = cible[id] - (s.stock[id] || 0) - enCours;
-      if (manque > 0 && s.argent > 3000) Sim.commander(s, id, manque);
+      const manque = Math.min(cible[id] - (s.stock[id] || 0) - enCours, Math.floor((s.argent - reserve) / Sim.coutAchat(s, id)));
+      if (manque > 0) Sim.commander(s, id, manque);
     });
     const tv = D.villes.find(v => v.id === s.villeId).type, bonus = { paris: 2, grande: 1 }[tv] || 0;
     const besoin = { vendeur: 1 + bonus + ["petit", "moyen", "grand"].indexOf(s.local), caissier: (s.local === "grand" ? 2 : 1) + (tv === "paris" ? 1 : 0) };
