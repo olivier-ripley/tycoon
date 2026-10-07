@@ -1679,7 +1679,23 @@
     verifierPalier(s);
     // en fin de mois, le bilan passe avant l'annonce d'une nouvelle gamme
     if ((s.jour + 1) % D().config.temps.joursParMois === 0) finMoisEnseigne(s);
-    else verifierDeblocages(s);
+    else { verifierDeblocages(s); alerteSalaires(s); }
+  }
+  // Prévient (une fois par mois) quand la trésorerie ne couvre plus les salaires prélevés en fin de mois
+  function alerteSalaires(s) {
+    var jPM = D().config.temps.joursParMois, num = numeroMois(s);
+    if (s.alerteSalaires === num) return;
+    var restants = jPM - 1 - (s.jour % jPM), aVenir = 0;
+    s.magasins.forEach(function (x, i) {
+      var mg = magasin(s, i);
+      aVenir += mg.salairesDus;
+      mg.employes.forEach(function (e) { aVenir += e.salaire * restants / jPM; });
+    });
+    aVenir = Math.round(aVenir);
+    if (s.argent >= aVenir) return;
+    s.alerteSalaires = num;
+    var risque = D().config.difficultes[s.difficulte].faillite === "pret" ? "la banque devra te prêter" : "c'est la faillite";
+    noter(s, "Attention : " + aVenir + " € de salaires seront prélevés en fin de mois, ta trésorerie (" + Math.round(s.argent) + " €) ne suffit pas. Sous zéro en fin de mois, " + risque + " : ralentis les commandes.", "alerte");
   }
 
   function debutJourneeEnseigne(s) {

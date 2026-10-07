@@ -43,7 +43,7 @@ node tools/campagne.js rennes,lyon,albi normal,difficile 1,2,3 9
 
 Un joueur automatique fait toute la partie (déménagements, nouveaux magasins, responsables, entrepôt) sur le nombre d'années demandé, et affiche quand tombe chaque palier, la faillite éventuelle, le nombre de magasins, le chiffre d'affaires et le résultat des 12 derniers mois. Compter environ 5 minutes par partie de 9 ans ; on peut en lancer plusieurs en parallèle. Avec `DETAIL=1` devant la commande, il affiche aussi chaque bilan mensuel.
 
-Repères mesurés (octobre 2026, joueur automatique) : palier 2 vers 1,5 à 3 ans, palier 3 vers 2 à 4 ans, victoire vers 5 ans en facile, 6 à 8 ans en normal, plus de 9 ans en difficile.
+Repères mesurés (octobre 2026, joueur automatique) : palier 2 vers 1,5 à 3 ans, palier 3 vers 2 à 4 ans, victoire vers 5 ans en facile, 6 à 8 ans en normal, plus de 9 ans en difficile. Lyon, grande ville rentable, va un peu plus vite (palier 2 vers 1,2 à 1,3 an en normal) ; monter son loyer ne le ralentit pas, cela le rend surtout mortel les premiers mois (faillite dès 4 000 €). L'outil lance aussi des parties que l'écran Nouvelle partie refuse (sous `departMinimum`, comme Lyon en difficile) : leurs faillites immédiates ne comptent pas.
 
 ## Règles en place
 
@@ -59,6 +59,7 @@ Repères mesurés (octobre 2026, joueur automatique) : palier 2 vers 1,5 à 3 an
 - Responsable de magasin (dès le 2e magasin, au bureau, onglet Personnel) : chaque matin il remplit les rayons vides selon la clientèle de la ville, recommande jusqu'au stock visé (entrepôt de la région d'abord, puis fournisseur), remplace un vendeur ou un caissier manquant et répond aux demandes de PC sur mesure. Chaque tâche se coupe dans la carte « Pilotage automatique » ; ses actions sont résumées en une ligne dans le journal. Il ne commande pas sous 5 000 € de trésorerie. Les notifications des magasins non affichés ne s'affichent plus en bulles : elles restent dans le journal.
 - Palier 4 « Leader national » (la victoire) : magasins dans 9 régions sur 13 et réputation moyenne de 70. Un écran de victoire résume la partie ; on peut ensuite continuer en mode libre. La sauvegarde affiche « Leader national » sur l'accueil.
 - Expansion (réglages `expansion`) : en plus du dépôt et de l'aménagement, 20 000 € de frais d'ouverture par nouveau magasin ; 4 mois minimum entre deux ouvertures (×0,75 en facile, ×1,3 en difficile) ; frais de siège chaque mois par magasin au-delà du premier (800 € + 60 € par magasin supplémentaire, ×0,75 en facile, ×1,4 en difficile). Palier 3 : 5 M€ de CA sur 12 mois ; palier 4 : 20 M€.
+- Salaires : ils sont prélevés en fin de mois. Dès que la trésorerie ne couvre plus les salaires restant à payer d'ici là, une alerte prévient le joueur (une fois par mois).
 - Démarrage : il faut au moins 10 000 € de trésorerie après l'installation (`departMinimum`) ; Paris ne se lance donc qu'en facile. Les grandes villes conseillent d'embaucher plus de vendeurs dès le départ.
 - En facile, la banque prête jusqu'à 40 000 € de dette au total ; au-delà, c'est la faillite.
 - Le jeu tutoie le joueur.
