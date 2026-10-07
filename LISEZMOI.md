@@ -13,7 +13,7 @@ Raccourcis : espace = pause, 1 / 2 / 3 = vitesse, A = liste « À faire » ; dan
 
 | Dossier | Contenu |
 | --- | --- |
-| `data/` | Données modifiables sans toucher au code : `deco.js` (sols, murs, 15 objets de déco, effets de l'ambiance), `evenements.js` (saisons et imprévus), `produits.js` (30 références, fournisseur), `villes.js` (43 villes dans les 13 régions, loyers, affluence), `clients.js` (profils), `carte-france.js` (contours de la carte), `carte-deco.js` (régions et fleuves de la carte illustrée), `concurrents.js` (enseignes rivales), `config.js` (budgets, salaires, durées, réputation, objectifs) |
+| `data/` | Données modifiables sans toucher au code : `deco.js` (sols, murs, 15 objets de déco, effets de l'ambiance), `evenements.js` (saisons et imprévus), `produits.js` (30 références, fournisseur), `villes.js` (43 villes dans les 13 régions, loyers, affluence), `clients.js` (profils), `carte-france.js` (contours de la carte), `carte-deco.js` (régions et fleuves de la carte illustrée), `concurrents.js` (enseignes rivales), `dilemmes.js` (décisions à prendre), `config.js` (budgets, salaires, durées, réputation, objectifs) |
 | `src/sim/simulation.js` | Les règles du jeu : temps, clients, ventes, stock, employés, loyer, bilan, faillite. Ne dépend pas de l'écran. |
 | `src/ui/` | L'affichage : carte de France (`vue-carte.js`), vue des trois pièces en isométrique (`vue-magasin.js`) et écrans de gestion (`panneaux.js`) |
 | `src/sauvegarde.js` | Sauvegarde automatique chaque jour de jeu, 3 emplacements, export et import d'un fichier |
@@ -85,6 +85,15 @@ Réglages dans `data/concurrents.js` (enseignes, force, ouvertures, soldes, rach
 - Chaque fin de mois : la force des rivaux monte doucement ; dans une ville où tu as un magasin, elle baisse si ta réputation dépasse 50 (et monte si elle est basse). Sous 12, le magasin rival ferme. Les enseignes ouvrent de nouveaux magasins (de préférence dans les grandes villes et là où tu es installé) et lancent parfois des **soldes** d'une semaine dans tes villes.
 - **Rachat** (à partir du palier 2) : dans une ville où tu es installé, le magasin rival ferme et ta réputation y gagne 6 points ; ailleurs, tu reprends son local, ce qui revient à ouvrir un magasin sans payer l'aménagement ni les frais d'ouverture (mêmes conditions qu'une ouverture). Prix : 12 000 € + 300 € par point de force + 4 mois de loyer de la ville.
 - La fiche de l'enseigne résume le marché : nombre de magasins de chaque rival en France et dans tes villes.
+
+## Dilemmes
+
+Réglages et textes dans `data/dilemmes.js` : on peut ajouter un dilemme sans toucher au code.
+
+- Environ une fois toutes les trois semaines de jeu (pas avant la 4e semaine), une situation demande une décision dans un de tes magasins : youtubeur qui propose une vidéo sponsorisée, employé qui demande une augmentation, client mécontent, lot à prix cassé, don à une école, concurrent qui débauche un employé, contrôle de sécurité, climatisation en panne (l'été), salon informatique, influenceuse gaming, stagiaire.
+- Le temps s'arrête et la fenêtre ne se ferme que par un choix. Chaque choix a ses conséquences : argent (compté dans les charges du mois, ou dans les achats pour un lot de stock), réputation du magasin, affluence pendant quelques jours, moral ou salaire de l'équipe, départ d'un employé. Certains choix sont un pari (la vidéo peut faire un flop).
+- Les montants dépendent de la taille de la ville ; un même dilemme ne revient pas avant 6 mois. Le résultat est noté dans le journal.
+- Les outils d'équilibrage (`tools/`) ne chargent pas les dilemmes : leurs parties restent comparables.
 
 ## Décoration du magasin
 

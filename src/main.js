@@ -358,6 +358,7 @@
       }
     }
     if (etat && etat.evenements.length && $("#modal").hidden) traiterEvenements();
+    if (etat && etat.dilemme && $("#modal").hidden) modalDilemme();
     if (etat) {
       if (ts - derniereVue > 90) { if (modeVue === "carte") carte.maj(etat); else vue.maj(etat); majBarre(); derniereVue = ts; }
       if (modeVue === "magasin" && ts - dernierPanneau > 800) { rafraichirPanneau(false); dernierPanneau = ts; }
@@ -377,7 +378,7 @@
   function traiterEvenements() {
     var r = Sim.vider(etat);
     r.evenements.forEach(function (e) {
-      var son = { bilan: "bilan", palier: "palier", victoire: "victoire", faillite: "faillite", deblocage: "evenement", evenement: "evenement" }[e.type];
+      var son = { bilan: "bilan", palier: "palier", victoire: "victoire", faillite: "faillite", deblocage: "evenement", evenement: "evenement", dilemme: "evenement" }[e.type];
       if (son) jouerSon(son);
       if (e.type === "bilan") return modalBilan(e.bilan, e.details);
       if (e.type === "palier") return modalPalier(e);
@@ -764,6 +765,23 @@
       "<li><b>Récupération de données</b> : longue et très bien payée, réservée à un technicien niveau 3.</li></ol>" +
       '<p class="aide">Règle tes tarifs dans l\'onglet Atelier du magasin. Les ordinateurs vendus sont garantis : certains reviendront en SAV.</p>',
       [{ texte: "Plus tard" }, { texte: "Voir l'atelier", style: "principal", action: function () { if (modeVue !== "magasin") montrerVue("magasin"); allerPiece("magasin", "atelier"); } }]);
+  }
+  // Dilemme : le temps s'arrête jusqu'à la décision (la fenêtre ne se ferme que par un choix)
+  function modalDilemme() {
+    var d = Sim.vueDilemme(etat);
+    if (!d) return;
+    var plusieurs = etat.magasins.length > 1;
+    ouvrirModal('<p class="sur-titre">Décision' + (plusieurs ? " · " + P.esc(d.ville) : "") + '</p><h2 class="annonce">' + P.esc(d.titre) + "</h2><p>" + P.esc(d.texte) + "</p>" +
+      '<p class="aide">Trésorerie : ' + P.euros(etat.argent) + "</p>",
+      d.choix.map(function (x, k) {
+        return { texte: P.esc(x.texte), style: k === 0 ? "principal" : "", action: function () {
+          var r = Sim.resoudreDilemme(etat, k);
+          if (!r.ok) return toast(r.raison, "alerte");
+          jouerSon(r.bon ? "bon" : "alerte");
+          ouvrirModal('<p class="sur-titre">' + P.esc(d.titre) + "</p><p>" + P.esc(r.texte) + "</p>", [{ texte: "Continuer", style: "principal" }]);
+          majBarre(); sauver();
+        } };
+      }));
   }
   function modalEvenement(e) {
     var effets = P.effetsEvenement(e.def), marche = e.def.prix || e.def.remises;

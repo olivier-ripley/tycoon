@@ -658,6 +658,109 @@
     });
   }
 
+  // ---------------------------------------------------------------- Dilemmes
+  // De temps en temps, une situation demande une décision (data/dilemmes.js). Le dilemme en attente est rangé
+  // dans s.dilemme ; l'écran ouvre une fenêtre et appelle resoudreDilemme avec le choix du joueur.
+  function DIL() { return D().dilemmes; }
+  function defDilemme(id) { return DIL().liste.filter(function (d) { return d.id === id; })[0]; }
+  // Exécute fn avec le magasin i chargé au premier niveau de l'état
+  function dansMagasin(s, i, fn) {
+    if (i === s.courant) return fn(s);
+    var c = s.courant;
+    ranger(s); charger(s, i);
+    try { return fn(s); } finally { ranger(s); charger(s, c); }
+  }
+  function boostVille(s, villeId) {
+    return (s.boosts || []).reduce(function (a, b) { return a + (b.villeId === villeId && b.fin >= s.jour ? b.bonus : 0); }, 0);
+  }
+  function dilemmesDuJour(s) {
+    var X = DIL();
+    s.boosts = (s.boosts || []).filter(function (b) { return b.fin >= s.jour; });
+    if (!X || s.dilemme || s.fin || s.jour < X.premierJour || rng(s) >= X.chanceParJour) return;
+    s.dilemmesVus = s.dilemmesVus || {};
+    var i = Math.floor(rng(s) * s.magasins.length), mg = magasin(s, i), v = villeParId(mg.villeId), poids = {};
+    X.liste.forEach(function (d) {
+      var vu = s.dilemmesVus[d.id];
+      if (vu != null && s.jour - vu < X.delaiMemeDilemme) return;
+      if (d.employe && !mg.employes.length) return;
+      if (d.rival && !rivauxVille(s, mg.villeId).length) return;
+      if (d.palier && (s.palier || 1) < d.palier) return;
+      if (d.reputationMin && mg.reputation < d.reputationMin) return;
+      if (d.stock && !mg.rayons.some(Boolean)) return;
+      if (d.mois && d.mois.indexOf(moisCalendrier(s.jour)) < 0) return;
+      poids[d.id] = d.poids || 1;
+    });
+    if (!Object.keys(poids).length) return;
+    var d = defDilemme(tirerPoids(s, poids)), ech = X.echelle[v.type] || 1, vars = { ville: v.nom };
+    if (d.montant) vars.montant = Math.round(entre(s, d.montant[0], d.montant[1]) * ech / 100) * 100;
+    if (d.employe) {
+      var e = mg.employes[Math.floor(rng(s) * mg.employes.length)];
+      vars.employeId = e.id; vars.employe = e.nom; vars.poste = D().config.postes[e.poste].nom.toLowerCase();
+    }
+    if (d.rival) { var rr = rivauxVille(s, mg.villeId); vars.chaine = chaine(rr[Math.floor(rng(s) * rr.length)].chaine).nom; }
+    if (d.stock) {
+      var ps = mg.rayons.filter(Boolean), p = produit(ps[Math.floor(rng(s) * ps.length)]), cm = coutMarche(s, p);
+      vars.produitId = p.id; vars.produit = p.nom;
+      vars.lot = borne(Math.round(3000 * ech / cm), 3, 20);
+      vars.prixLot = Math.round(vars.lot * cm * 0.6 / 10) * 10;
+    }
+    s.dilemmesVus[d.id] = s.jour;
+    s.dilemme = { id: d.id, magasin: i, villeId: mg.villeId, jour: s.jour, vars: vars };
+    s.evenements.push({ type: "dilemme" });
+  }
+  function remplir(texte, vars) {
+    return String(texte || "").replace(/\{(\w+)\}/g, function (m, k) {
+      if (vars[k] == null) return m;
+      return k === "montant" || k === "prixLot" ? String(Math.round(vars[k])).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " €" : vars[k];
+    });
+  }
+  function coutChoix(x, vars) { return x.cout === "montant" ? vars.montant : x.cout === "prixLot" ? vars.prixLot : (x.cout || 0); }
+  // Ce que l'écran affiche : titre, texte et choix (avec leur coût)
+  function vueDilemme(s) {
+    var dl = s.dilemme, d = dl && defDilemme(dl.id);
+    if (!d) return null;
+    return { titre: remplir(d.titre, dl.vars), texte: remplir(d.texte, dl.vars), ville: dl.vars.ville, magasin: dl.magasin,
+      choix: d.choix.map(function (x) { return { texte: remplir(x.texte, dl.vars), cout: coutChoix(x, dl.vars) }; }) };
+  }
+  function appliquerEffets(s, x, dl) {
+    var vars = dl.vars, cout = coutChoix(x, vars);
+    if (cout) s.argent -= cout;
+    if (x.affluence) s.boosts.push({ villeId: dl.villeId, fin: s.jour + x.affluence.jours - 1, bonus: x.affluence.bonus });
+    dansMagasin(s, dl.magasin, function (s) {
+      if (cout && !x.lot) s.mois.charges += cout;            // dépense exceptionnelle, comptée dans les charges du mois
+      if (x.reputation) changerReputation(s, x.reputation);
+      if (x.moral) s.employes.forEach(function (e) { e.moral = borne(e.moral + x.moral, 0, 100); });
+      var e = s.employes.filter(function (y) { return y.id === vars.employeId; })[0];
+      if (e && x.moralEmploye) e.moral = borne(e.moral + x.moralEmploye, 0, 100);
+      if (e && x.salaire) e.salaire = Math.round(e.salaire * (1 + x.salaire) / 10) * 10;
+      if (e && x.depart) { libererTache(s, e); s.employes.splice(s.employes.indexOf(e), 1); }
+      if (x.lot) {
+        var avant = Math.max(0, s.stock[vars.produitId] || 0);
+        s.coutMoyen = s.coutMoyen || {};
+        s.coutMoyen[vars.produitId] = Math.round((avant * coutStock(s, vars.produitId) + cout) / (avant + vars.lot));
+        s.stock[vars.produitId] = avant + vars.lot;
+        s.mois.achats += cout;
+      }
+    });
+  }
+  function resoudreDilemme(s, k) {
+    var dl = s.dilemme, d = dl && defDilemme(dl.id), x = d && d.choix[k];
+    if (!x) return { ok: false, raison: "Ce choix n'existe plus." };
+    s.boosts = s.boosts || [];
+    appliquerEffets(s, x, dl);
+    var resultat = x.resultat, bon = true;
+    if (x.alea) {
+      var branche = rng(s) < x.alea.chance ? x.alea.succes : x.alea.echec;
+      bon = branche === x.alea.succes;
+      appliquerEffets(s, branche, dl);
+      resultat = branche.resultat || resultat;
+    }
+    s.dilemme = null;
+    var texte = remplir(resultat || "C'est noté.", dl.vars);
+    noter(s, (s.magasins.length > 1 ? dl.vars.ville + " · " : "") + remplir(d.titre, dl.vars) + " : " + texte, bon ? "info" : "alerte");
+    return { ok: true, texte: texte, bon: bon };
+  }
+
   // ---------------------------------------------------------------- Logistique (palier 3)
   // Entrepôts régionaux (achat en gros) et flotte de véhicules pour livrer les magasins.
   // Tout cela appartient à l'enseigne : ces champs restent au premier niveau de l'état.
@@ -1578,7 +1681,7 @@
     // pointe en milieu de journée et en fin d'après-midi
     var h = s.minuteJour / 60, pointe = 0.75 + 0.35 * Math.exp(-Math.pow(h - 12.5, 2) / 2) + 0.45 * Math.exp(-Math.pow(h - 17.5, 2) / 2);
     // s.affluenceDemo : seulement pour la boutique de démonstration de l'accueil (accueil-vivant.js)
-    return tv.clientsParJour * (local(s).affluence || 1) * modifs(s).affluence * (1 - concurrence) * rep * c.temps.affluenceJour[s.jour % 7] * pointe * (1 + effetPub(s)) * (1 + ambiance(s).affluence) * (s.affluenceDemo || 1) / minutesOuvertes;
+    return tv.clientsParJour * (local(s).affluence || 1) * modifs(s).affluence * (1 - concurrence) * rep * c.temps.affluenceJour[s.jour % 7] * pointe * (1 + effetPub(s)) * (1 + ambiance(s).affluence) * Math.max(0, 1 + boostVille(s, s.villeId)) * (s.affluenceDemo || 1) / minutesOuvertes;
   }
 
   function minute(s) {
@@ -1701,6 +1804,7 @@
   function debutJourneeEnseigne(s) {
     evenementsDuJour(s);
     logistiqueDuJour(s);
+    dilemmesDuJour(s);
     if (s.jour % D().config.temps.joursParMois === 0 && s.jour > 0) {
       rembourserPret(s);
       var X = D().config.expansion, extra = (s.magasins ? s.magasins.length : 1) - 1;
@@ -1912,6 +2016,7 @@
     synchroniser: function (s) { migrer(s); ranger(s); },
     rivauxVille: rivauxVille, soldesVille: soldesVille, concurrenceVille: concurrenceVille, chaine: chaine, marche: marche,
     prixRachat: prixRachat, conditionsRachat: conditionsRachat, racheterRival: racheterRival, initRivaux: initRivaux,
+    vueDilemme: vueDilemme, resoudreDilemme: resoudreDilemme, boostVille: boostVille,
     gammesOuvertes: gammesOuvertes, disponible: disponible, conditionGamme: conditionGamme, valeurStock: valeurStock, vider: vider, tauxArrivee: tauxArrivee
   };
 })(typeof window !== "undefined" ? window : globalThis);
