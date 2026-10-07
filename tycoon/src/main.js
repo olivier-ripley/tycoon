@@ -169,7 +169,16 @@
       : modeCompte === "oublie" ? Compte.oublie(email) : Compte.nouveauMdp(mdp);
     p.then(function (r) {
       fin();
-      if (!r.ok) return messageCompte(r.raison);
+      if (!r.ok) {
+        messageCompte(r.raison);
+        if (/Confirme d'abord ton email/.test(r.raison)) {
+          var m = $("#compte-message"), bt = document.createElement("button");
+          bt.type = "button"; bt.className = "lien"; bt.textContent = "Renvoyer l'email de confirmation";
+          bt.addEventListener("click", function () { Compte.renvoyer(email).then(function (x) { messageCompte(x.ok ? "Nouvel email envoyé à " + email + "." : x.raison, x.ok); }); });
+          m.appendChild(document.createElement("br")); m.appendChild(bt);
+        }
+        return;
+      }
       $("#compte-mdp").value = ""; $("#compte-mdp2").value = "";
       if (modeCompte === "inscription" && r.confirmer) return messageCompte("Compte créé ! Clique sur le lien envoyé à " + email + " pour le confirmer (regarde aussi dans les spams), puis connecte-toi.", true);
       if (modeCompte === "oublie") return messageCompte("Si un compte existe avec cet email, un lien vient d'y être envoyé.", true);
@@ -201,7 +210,16 @@
     Compte.init(function (evt) {
       if (evt === "PASSWORD_RECOVERY") { if (!etat) ecranCompte("nouveau"); return; }
       if ((evt === "SIGNED_IN" || evt === "SIGNED_OUT") && !etat && !$("#ecran-accueil").hidden) accueil();
-    }).then(function () { if (!etat && !$("#ecran-accueil").hidden) accueil(); });
+    }).then(function (u) {
+      var l = Compte.lien();
+      if (l && l.erreur) {
+        ouvrirModal("<h2>Le lien n'a pas fonctionné</h2><p>" + P.esc(l.erreur) + "</p>", [
+          { texte: "Fermer" }, { texte: "Me connecter", style: "principal", action: function () { ecranCompte("connexion"); } }]);
+      } else if (l && u && l.type !== "recovery") {
+        toast(l.type === "signup" ? "Email confirmé : bienvenue, ton compte est prêt !" : "Tu es connecté.", "bon");
+      }
+      if (!etat && !$("#ecran-accueil").hidden) accueil();
+    });
   }
 
   function ecranNouvelle(n) {

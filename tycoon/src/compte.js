@@ -27,6 +27,24 @@
     return m || "Erreur inconnue.";
   }
 
+  // Retour depuis un lien reçu par email : #access_token=…&type=signup|recovery, ou #error=…&error_code=otp_expired
+  var lien = (function () {
+    var brut = (root.location.hash || "").replace(/^#/, "") + "&" + (root.location.search || "").replace(/^\?/, "");
+    var p = {};
+    brut.split("&").forEach(function (kv) { var i = kv.indexOf("="); if (i > 0) p[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, " ")); });
+    if (p.error || p.error_code) {
+      var code = p.error_code || p.error, d = p.error_description || "";
+      return { erreur: /otp_expired|expired|invalid/i.test(code + d)
+        ? "Ce lien a expiré ou a déjà servi. Les messageries ouvrent parfois les liens toutes seules pour les vérifier : connecte-toi directement, ou demande un nouveau lien."
+        : traduire(d || code) };
+    }
+    if (p.access_token || p.code || p.token_hash) return { type: p.type || "connexion" };
+    return null;
+  })();
+  function nettoyerAdresse() {
+    try { if (lien) root.history.replaceState(null, "", root.location.origin + root.location.pathname); } catch (e) {}
+  }
+
   function init(rappel) {
     if (rappel) ecouteurs.push(rappel);
     if (client || !dispo()) return Promise.resolve(utilisateur);
@@ -41,8 +59,10 @@
     });
     return client.auth.getSession().then(function (r) {
       utilisateur = r.data && r.data.session ? r.data.session.user : null;
+      if (r.error && lien && !lien.erreur) lien = { erreur: traduire(r.error) };
+      nettoyerAdresse();
       return utilisateur;
-    }, function () { return null; });
+    }, function (e) { if (lien) lien = { erreur: traduire(e) }; nettoyerAdresse(); return null; });
   }
 
   function reponse(r) { return r.error ? { ok: false, raison: traduire(r.error) } : { ok: true, data: r.data }; }
@@ -60,6 +80,7 @@
   function deconnecter() {
     return vider().then(function () { return client.auth.signOut(); }).then(function () { utilisateur = null; return { ok: true }; }, attraper);
   }
+  function renvoyer(email) { return client.auth.resend({ type: "signup", email: email, options: { emailRedirectTo: redirection() } }).then(reponse, attraper); }
   function oublie(email) { return client.auth.resetPasswordForEmail(email, { redirectTo: redirection() }).then(reponse, attraper); }
   function nouveauMdp(mdp) { return client.auth.updateUser({ password: mdp }).then(reponse, attraper); }
 
@@ -113,7 +134,7 @@
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") vider(); });
 
   TMI.Compte = {
-    dispo: dispo, init: init, utilisateur: function () { return utilisateur; },
+    dispo: dispo, init: init, utilisateur: function () { return utilisateur; }, lien: function () { return lien; }, renvoyer: renvoyer,
     inscrire: inscrire, connecter: connecter, deconnecter: deconnecter, oublie: oublie, nouveauMdp: nouveauMdp,
     liste: liste, charger: charger, envoyer: envoyer, vider: vider, supprimer: supprimer, supprimerCompte: supprimerCompte,
     sync: function () { return etatSync; }, enAttente: function () { return Object.keys(attente).length; }
