@@ -1425,7 +1425,8 @@
     var minutesOuvertes = c.temps.fermeture - c.temps.ouverture;
     // pointe en milieu de journée et en fin d'après-midi
     var h = s.minuteJour / 60, pointe = 0.75 + 0.35 * Math.exp(-Math.pow(h - 12.5, 2) / 2) + 0.45 * Math.exp(-Math.pow(h - 17.5, 2) / 2);
-    return tv.clientsParJour * (local(s).affluence || 1) * modifs(s).affluence * (1 - concurrence) * rep * c.temps.affluenceJour[s.jour % 7] * pointe * (1 + effetPub(s)) * (1 + ambiance(s).affluence) / minutesOuvertes;
+    // s.affluenceDemo : seulement pour la boutique de démonstration de l'accueil (accueil-vivant.js)
+    return tv.clientsParJour * (local(s).affluence || 1) * modifs(s).affluence * (1 - concurrence) * rep * c.temps.affluenceJour[s.jour % 7] * pointe * (1 + effetPub(s)) * (1 + ambiance(s).affluence) * (s.affluenceDemo || 1) / minutesOuvertes;
   }
 
   function minute(s) {

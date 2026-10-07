@@ -80,10 +80,11 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 .sous-titre { margin: 0 0 6px; color: var(--texte-2); }
 .carte-accueil h3 { font-size: 15px; margin-top: 8px; }
 .sauvegardes { display: flex; flex-direction: column; gap: 10px; }
-.emplacement { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--bord); border-radius: var(--rayon-arrondi); background: var(--surface-2); }
-.emplacement .infos { display: flex; flex-direction: column; min-width: 0; }
+.emplacement { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; padding: 12px 14px; border: 1px solid var(--bord); border-radius: var(--rayon-arrondi); background: var(--surface-2); }
+.emplacement .infos { display: flex; flex-direction: column; min-width: 0; flex: 1 1 220px; }
 .emplacement .infos span { color: var(--texte-2); font-size: 13px; }
 .emplacement .boutons { display: flex; gap: 8px; flex-shrink: 0; }
+@media (max-width: 520px) { .emplacement .boutons { flex: 1 1 100%; } .emplacement .boutons .bouton { flex: 1; } }   /* téléphone : boutons sous le texte, pleine largeur */
 
 .choix-villes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; max-height: 46vh; overflow: auto; padding: 2px; }
 .ville { text-align: left; border: 1px solid var(--bord); background: var(--surface-2); border-radius: var(--rayon-arrondi); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
@@ -282,6 +283,18 @@ h1, h2, h3, .titre-jeu { font-family: var(--titre); letter-spacing: -0.01em; }
   radial-gradient(1200px 500px at 85% -10%, rgba(36,87,255,.14), transparent 60%),
   radial-gradient(900px 400px at -10% 110%, rgba(255,122,26,.12), transparent 60%), var(--fond); }
 .carte-accueil { border-radius: 20px; border-color: transparent; box-shadow: 0 2px 4px rgba(20,27,45,.05), 0 18px 50px rgba(20,27,45,.10); }
+/* Scène vivante de l'accueil : la boutique de démo à côté de la carte (au-dessus sur téléphone) */
+#ecran-accueil { align-items: center; gap: clamp(8px, 3vw, 48px); }
+#ecran-accueil .carte-accueil { flex: 0 1 560px; position: relative; z-index: 1; }
+.scene-accueil { flex: 1 1 0; max-width: 820px; height: min(80vh, 680px); position: relative; }
+.scene-accueil::before { content: ""; position: absolute; inset: 8% 4% 6%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(255,255,255,.4) 60%, transparent); }
+.scene-accueil-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+@media (max-width: 959px) {
+  #ecran-accueil { flex-direction: column; justify-content: flex-start; padding-top: 12px; }
+  #ecran-accueil .carte-accueil { flex: none; }
+  .scene-accueil { order: -1; flex: none; width: 100%; max-width: 560px; height: clamp(220px, 38vh, 340px); margin-bottom: -18px; }
+}
 .marque { display: flex; align-items: center; gap: 14px; }
 .logo { width: 52px; height: 52px; border-radius: 14px; background: var(--hud); display: grid; place-items: center; flex: none; }
 .carte-accueil h1 { font-size: 32px; line-height: 1.05; font-weight: 800; }
@@ -601,3 +614,61 @@ svg .tuto-cible, .marqueur-boutique.tuto-cible { outline: none !important; anima
 .c-trajet { stroke: #ffffff; stroke-width: 2; stroke-dasharray: 5 5; opacity: .9; }
 .c-trajet.propre { stroke: #2457ff; opacity: .75; }
 .c-camion { pointer-events: auto; cursor: help; }
+
+/* ============================================================ Accueil : menu de jeu
+   Fond de nuit, store rayé et enseigne néon en haut de la carte, boutiques en tuiles, la boutique de démo éclairée à côté. */
+#ecran-accueil { position: relative; color: var(--hud-texte); background:
+  radial-gradient(900px 620px at 72% 42%, rgba(64,110,255,.30), transparent 65%),
+  radial-gradient(700px 500px at 8% 100%, rgba(255,122,26,.18), transparent 60%),
+  linear-gradient(180deg, #0c1222 0%, #141b2d 60%, #1a2238 100%); }
+#ecran-accueil .carte-accueil { background: rgba(20,27,45,.84); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.08); box-shadow: 0 30px 80px rgba(0,0,0,.45); padding: 0 26px 24px; overflow: hidden; }
+.store { position: relative; margin: 0 -26px 12px; height: 26px; flex: none;
+  background: repeating-linear-gradient(90deg, #ff7a1a 0 36px, #fff1e2 36px 72px); }
+.store::after { content: ""; position: absolute; left: 0; right: 0; bottom: -12px; height: 12px;
+  background: radial-gradient(circle at 18px 0, #ff7a1a 17px, transparent 17.5px) 0 0 / 72px 12px repeat-x,
+              radial-gradient(circle at 18px 0, #fff1e2 17px, transparent 17.5px) 36px 0 / 72px 12px repeat-x;
+  filter: drop-shadow(0 3px 2px rgba(0,0,0,.25)); }
+.enseigne-accueil { text-align: center; padding: 6px 0 4px; }
+.enseigne-accueil h1 { margin: 0; display: flex; flex-direction: column; align-items: center; line-height: .9; }
+.enseigne-accroche { margin: 4px 0 0; color: var(--hud-texte-2); font-size: 14.5px; }
+.titre-section { margin: 6px 0 -4px; font-family: var(--police); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .14em; color: var(--hud-texte-2); }
+
+/* compte, en discret */
+#ecran-accueil .compte { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.08); padding: 10px 12px; }
+#ecran-accueil .compte b { color: var(--hud-texte); font-size: 13.5px; }
+#ecran-accueil .compte span { color: var(--hud-texte-2); }
+#ecran-accueil .compte.connecte { background: rgba(18,161,80,.10); border-color: rgba(18,161,80,.35); }
+#ecran-accueil .compte.transfert { background: rgba(255,122,26,.10); border-color: rgba(255,122,26,.35); }
+#ecran-accueil .compte .bouton:not(.principal), #ecran-accueil .importer { background: transparent; color: var(--hud-texte); border-color: rgba(255,255,255,.16); min-height: 36px; font-size: 13.5px; box-shadow: none; }
+#ecran-accueil .compte .bouton:not(.principal):hover, #ecran-accueil .importer:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.3); }
+#ecran-accueil .compte .lien { color: var(--hud-texte-2); }
+#ecran-accueil .importer { color: var(--hud-texte-2); }
+
+/* boutiques en tuiles */
+#ecran-accueil .emplacement { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); border-radius: 14px; padding: 12px; color: inherit; }
+#ecran-accueil .emplacement .infos span { color: var(--hud-texte-2); font-size: 12.5px; }
+.emplacement.plein .vignette { width: 46px; height: 46px; flex: none; border-radius: 12px; display: grid; place-items: center; font-family: var(--titre); font-weight: 800; font-size: 22px; color: #fff;
+  background: linear-gradient(135deg, hsl(var(--teinte) 78% 60%), hsl(calc(var(--teinte) + 40) 70% 42%)); box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); }
+.emplacement.plein .infos { flex: 1 1 0; min-width: 120px; }
+.emplacement.plein .infos b { color: #fff; font-size: 16px; }
+#ecran-accueil .emplacement .infos .date { font-size: 11.5px; opacity: .75; }
+.emplacement .argent { font-family: var(--titre); font-weight: 800; font-size: 18px; color: #4ade80; white-space: nowrap; }
+.emplacement.finie { opacity: .7; }
+.emplacement.finie .argent { color: #ff6b81; }
+.emplacement .boutons { align-items: center; }
+.bouton-icone { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; background: transparent; border: 1px solid rgba(255,255,255,.14); color: var(--hud-texte-2); cursor: pointer; }
+.bouton-icone:hover, .bouton-icone:focus-visible { color: #ff6b81; border-color: rgba(255,107,129,.5); background: rgba(214,51,74,.14); }
+#ecran-accueil .emplacement.vide { width: 100%; flex-wrap: nowrap; justify-content: flex-start; text-align: left; font: inherit; cursor: pointer;
+  background: transparent; border: 1.5px dashed rgba(255,255,255,.2); transition: border-color .15s, background .15s; }
+#ecran-accueil .emplacement.vide:hover, #ecran-accueil .emplacement.vide:focus-visible { border-color: #ff9a4a; background: rgba(255,122,26,.08); }
+.emplacement.vide .plus { width: 46px; height: 46px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 28px; font-weight: 600; color: #ff9a4a; background: rgba(255,122,26,.14); }
+.emplacement.vide .infos b { color: #fff; font-size: 15px; }
+
+/* la boutique de démo, éclairée dans la nuit */
+#ecran-accueil .scene-accueil::before { inset: 4% 0 0; background: radial-gradient(closest-side, rgba(150,180,255,.30), rgba(90,120,220,.10) 60%, transparent); }
+.version-accueil { position: absolute; right: 16px; bottom: 10px; margin: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.3); }
+@media (min-width: 960px) { #ecran-accueil { padding-left: max(16px, 4vw); padding-right: max(16px, 4vw); } }
+@media (max-width: 959px) { .version-accueil { position: static; order: 2; text-align: center; } }
+/* Logo du jeu (img/logo-kaouch-tycoon.png, fond transparent) */
+.logo-jeu { display: block; width: 100%; max-width: 460px; height: auto; margin: 2px auto 0; filter: drop-shadow(0 8px 18px rgba(0,0,0,.45)); }

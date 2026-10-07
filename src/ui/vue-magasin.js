@@ -37,8 +37,6 @@
     ssd: { type: "boite", c: "#0f9fb3", hh: 4 }, ecran: { type: "ecran", c: "#23262d" },
     clavier_souris: { type: "boite", c: "#f08a24", hh: 5 }, casque: { type: "boite", c: "#d63a3a", hh: 8 }
   };
-  var PEAUX = ["#f2c9a6", "#e2aa84", "#c48461", "#8f5b3c", "#f6d6bd", "#6e4430"];
-  var CHEVEUX = ["#2a2a2a", "#5b3824", "#a8743f", "#d8b26a", "#1b1b1b", "#7a2f1d"];
 
   // ------------------------------------------------------------ Outils
   function isoV(x, y, z) { return [(x - y) * TW / 2, (x + y) * TH / 2 - (z || 0)]; }
@@ -837,24 +835,95 @@
   };
 
   // ------------------------------------------------------------ Personnages
-  function personnage(parent, couleur, id, employe) {
-    var h = hache(id);
+  // Même apparence que dans la vue 3D (TMI.apparence, apparence.js), dessinée de face, pieds à l'origine.
+  function silhouette(parent, A) {
+    var f = el("g", { transform: "scale(" + (A.carrure * (A.enfant ? 0.82 : 1)).toFixed(3) + "," + A.taille.toFixed(3) + ")" }, parent);
+    var cheveux = A.cheveux, style = A.coiffure;
+    // derrière la tête et le dos : cheveux longs, afro, queue, chignon, sac à dos, capuche
+    if (style === "long") el("path", { d: "M-7.4 -41 h14.8 v8 a2 2 0 0 1 -2 2 h-10.8 a2 2 0 0 1 -2 -2 z", fill: cheveux }, f);
+    if (style === "afro") el("circle", { cx: 0, cy: -42, r: 9.3, fill: cheveux }, f);
+    if (style === "queue") el("ellipse", { cx: 7.2, cy: -37.5, rx: 2.2, ry: 4.2, fill: cheveux }, f);
+    if (style === "chignon") el("circle", { cx: 0, cy: -47.2, r: 3.2, fill: cheveux }, f);
+    if (A.sacADos) el("rect", { x: -10.5, y: -33, width: 9, height: 14, rx: 3, fill: A.sacADos, stroke: "rgba(0,0,0,.18)", "stroke-width": 0.6 }, f);
+    if (A.capuche) el("ellipse", { cx: 0, cy: -33.5, rx: 7.5, ry: 3.2, fill: teintes(A.haut, -0.2) }, f);
+    // jambes, jupe, chaussures
+    if (A.jupe) {
+      [-4.5, 1.5].forEach(function (x) { el("rect", { x: x, y: -10, width: 3, height: 9.5, rx: 1.5, fill: A.peau }, f); });
+      el("path", { d: "M-6.8 -17 h13.6 l2.4 9 h-18.4 z", fill: A.jupe }, f);
+    } else [-5, 1].forEach(function (x) { el("rect", { x: x, y: -16, width: 4, height: 15.5, rx: 2, fill: A.bas }, f); });
+    [-3.4, 3.4].forEach(function (x) { el("ellipse", { cx: x, cy: -0.9, rx: 2.9, ry: 1.6, fill: A.chaussures, stroke: "rgba(0,0,0,.25)", "stroke-width": 0.5 }, f); });
+    // bras (manches courtes pour les t-shirts) et mains
+    [-10, 6].forEach(function (x) {
+      el("rect", { x: x, y: -31, width: 4, height: 14, rx: 2, fill: A.manchesLongues ? A.haut : A.peau }, f);
+      if (!A.manchesLongues) el("rect", { x: x, y: -31, width: 4, height: 5.5, rx: 2, fill: A.haut }, f);
+      el("circle", { cx: x + 2, cy: -16.6, r: 2.1, fill: A.peau }, f);
+    });
+    // buste
+    el("rect", { x: -7.5, y: -33, width: 15, height: 19, rx: 6, fill: A.haut, stroke: A.haut === "#ffffff" ? "#d5dbe4" : "none", "stroke-width": 0.6 }, f);
+    el("rect", { x: -7.5, y: -33, width: 4, height: 19, rx: 2, fill: "#ffffff", opacity: 0.18 }, f);
+    el("rect", { x: 3.5, y: -33, width: 4, height: 19, rx: 2, fill: "#000000", opacity: 0.08 }, f);
+    if (A.veste) {   // chemise claire et cravate sous la veste
+      el("path", { d: "M-2.8 -33 h5.6 l-2.8 8.5 z", fill: "#f4f6f9" }, f);
+      if (A.cravate) el("path", { d: "M-0.9 -31.8 h1.8 l0.5 7 l-1.4 1.6 l-1.4 -1.6 z", fill: A.cravate }, f);
+    }
+    if (A.poste === "technicien") el("rect", { x: -6, y: -24.5, width: 12, height: 11, rx: 2, fill: "#3a4150" }, f);
+    if (A.poste === "magasinier") el("rect", { x: -7.5, y: -30, width: 15, height: 12, rx: 3, fill: "#ff9f1a", opacity: 0.9 }, f);
+    if (A.badge) { el("rect", { x: 1.5, y: -29, width: 4, height: 5, rx: 1, fill: "#ffffff" }, f); el("rect", { x: 2.1, y: -28.2, width: 2.8, height: 1, fill: A.haut }, f); }
+    // ce que la personne porte à la main
+    if (A.mallette) { el("rect", { x: 6.5, y: -15.5, width: 8, height: 6, rx: 1, fill: "#4a3424" }, f); el("rect", { x: 9.3, y: -16.6, width: 2.4, height: 1.2, rx: 0.5, fill: "#2c2f36" }, f); }
+    if (A.sacCourses) { el("rect", { x: 6.5, y: -16, width: 7, height: 8, rx: 1, fill: A.sacCourses, stroke: "#c3cad6", "stroke-width": 0.5 }, f); el("rect", { x: 6.5, y: -13.8, width: 7, height: 1.6, fill: "#d6334a" }, f); }
+    // tête et visage
+    el("rect", { x: -1.8, y: -35, width: 3.6, height: 3, fill: teintes(A.peau, -0.08) }, f);
+    el("circle", { cx: 0, cy: -40, r: 6.5, fill: A.peau }, f);
+    [-2.3, 2.3].forEach(function (x) { el("circle", { cx: x, cy: -40, r: 0.85, fill: "#1f2328" }, f); });
+    el("path", { d: "M-1.3 -36.8 q1.3 0.9 2.6 0", fill: "none", stroke: "#a5524a", "stroke-width": 0.7, "stroke-linecap": "round" }, f);
+    // coiffure
+    var frange = "M-6.8 -40 a6.8 6.8 0 0 1 13.6 0 q-3 -3 -6.8 -2.5 q-4 0.5 -6.8 2.5 z";
+    if (style === "court" || style === "long" || style === "queue" || style === "chignon") el("path", { d: frange, fill: cheveux }, f);
+    if (style === "rase") el("path", { d: "M-6.6 -40.5 a6.6 6.6 0 0 1 13.2 0 q-6.6 -2.6 -13.2 0 z", fill: teintes(A.peau, -0.18) }, f);
+    if (style === "boucles" || style === "afro") {
+      var n = style === "afro" ? 9 : 7, rr = style === "afro" ? 7.2 : 6.3, rb = style === "afro" ? 2.8 : 2.2;
+      el("path", { d: frange, fill: cheveux }, f);
+      for (var k = 0; k < n; k++) { var a = Math.PI + k / (n - 1) * Math.PI; el("circle", { cx: (Math.cos(a) * rr).toFixed(2), cy: (-40 + Math.sin(a) * rr).toFixed(2), r: rb, fill: cheveux }, f); }
+    }
+    if (style === "casquette") {
+      el("path", { d: "M-6.9 -40.3 a6.9 6.9 0 0 1 13.8 0 z", fill: A.couvreChef }, f);
+      el("path", { d: "M-1 -41.6 h8.6 q1.6 0 1.1 1.3 h-9.7 z", fill: teintes(A.couvreChef, -0.2) }, f);
+    }
+    if (style === "bonnet") {
+      el("path", { d: "M-6.9 -40.5 a6.9 8.5 0 0 1 13.8 0 z", fill: A.couvreChef }, f);
+      el("rect", { x: -7.2, y: -42, width: 14.4, height: 2.6, rx: 1.3, fill: teintes(A.couvreChef, -0.15) }, f);
+      el("circle", { cx: 0, cy: -49.4, r: 1.7, fill: teintes(A.couvreChef, 0.3) }, f);
+    }
+    if (A.barbe) el("path", { d: "M-6.2 -39.5 q0 7 6.2 7 q6.2 0 6.2 -7 q-1.5 2.4 -3 2.3 q-3.2 -1.3 -6.4 0 q-1.5 0.1 -3 -2.3 z", fill: cheveux }, f);
+    if (A.lunettes) {
+      [-2.3, 2.3].forEach(function (x) { el("circle", { cx: x, cy: -40, r: 1.9, fill: "none", stroke: A.lunettes, "stroke-width": 0.7 }, f); });
+      el("path", { d: "M-0.4 -40.2 h0.8", stroke: A.lunettes, "stroke-width": 0.6 }, f);
+    }
+    if (A.casque) {
+      el("path", { d: "M-7 -40 a7 7.6 0 0 1 14 0", fill: "none", stroke: "#1f2328", "stroke-width": 1.6 }, f);
+      [-8.6, 6].forEach(function (x) {
+        el("rect", { x: x, y: -42.4, width: 2.6, height: 4.8, rx: 1.2, fill: "#1f2328" }, f);
+        el("rect", { x: x + (x < 0 ? 0 : 1.8), y: -41.4, width: 0.8, height: 2.8, rx: 0.4, fill: "#ff3d7f" }, f);
+      });
+    }
+    return f;
+  }
+  // desc = { id, profil } pour un client, { id, poste } pour un employé
+  function personnage(parent, desc) {
+    var A = TMI.apparence(desc), employe = !!desc.poste;
     var g = el("g", { class: employe ? "employe" : "client" }, parent);
     var corps = el("g", { class: "corps" }, g);
     el("ellipse", { cx: 0, cy: 0, rx: 10, ry: 4.5, fill: "rgba(20,30,50,.22)" }, corps);
     corps._impatience = el("ellipse", { cx: 0, cy: 0, rx: 13, ry: 6, fill: "none", stroke: "var(--danger)", "stroke-width": 2.5, opacity: 0 }, corps);
-    var jambe = employe ? "#2a3142" : ["#34405a", "#3d3d3d", "#5a6b8a", "#6b4f3a"][h % 4];
-    el("rect", { x: -5, y: -15, width: 4, height: 15, rx: 2, fill: jambe }, corps);
-    el("rect", { x: 1, y: -15, width: 4, height: 15, rx: 2, fill: jambe }, corps);
-    el("rect", { x: -7.5, y: -33, width: 15, height: 20, rx: 6, fill: couleur }, corps);
-    el("rect", { x: -7.5, y: -33, width: 4, height: 20, rx: 2, fill: "#ffffff", opacity: 0.18 }, corps);
-    el("circle", { cx: 0, cy: -40, r: 6.5, fill: PEAUX[h % PEAUX.length] }, corps);
-    var ch = CHEVEUX[(h >> 3) % CHEVEUX.length];
-    if ((h >> 5) % 3 === 0) el("path", { d: "M-6.8 -40 a6.8 6.8 0 0 1 13.6 0 v4 h-2 v-3 h-9.6 v6 h-2 z", fill: ch }, corps);
-    else el("path", { d: "M-6.8 -40 a6.8 6.8 0 0 1 13.6 0 q-3 -3 -6.8 -2.5 q-4 0.5 -6.8 2.5 z", fill: ch }, corps);
-    if (employe) el("rect", { x: 1.5, y: -29, width: 4, height: 5, rx: 1, fill: "#ffffff" }, corps);
+    if (A.avecEnfant) {   // les familles viennent parfois avec un enfant, un peu en retrait
+      var ge = el("g", { transform: "translate(-11,-2)" }, corps);
+      el("ellipse", { cx: 0, cy: 0, rx: 6.5, ry: 3, fill: "rgba(20,30,50,.2)" }, ge);
+      silhouette(ge, TMI.apparence({ id: desc.id + "-enfant", enfant: true }));
+    }
+    silhouette(corps, A);
     g._corps = corps;
-    g._bulle = el("g", { transform: "translate(10,-52)" }, g);
+    g._bulle = el("g", { transform: "translate(10," + (-46.5 * A.taille - 9).toFixed(1) + ")" }, g);
     el("path", { d: "M-10 -10 h20 a3 3 0 0 1 3 3 v10 a3 3 0 0 1 -3 3 h-12 l-4 4 v-4 h-4 a3 3 0 0 1 -3 -3 v-10 a3 3 0 0 1 3 -3 z", fill: "#ffffff", stroke: "#c3cad6" }, g._bulle);
     g._bulleTxt = el("text", { x: 0, y: 2, "text-anchor": "middle", "font-size": 11, "font-weight": 800, fill: "#1f2328", class: "svg-texte" }, g._bulle);
     g._bulle.style.display = "none";
@@ -866,8 +935,8 @@
     g._emprise = [x - 0.12, y - 0.12, x + 0.12, y + 0.12];
     g._pos = { x: x, y: y };
   };
-  V.nouveauPerso = function (couleur, id, employe, titre) {
-    var g = personnage(this.calque, couleur, id, employe);
+  V.nouveauPerso = function (desc, titre) {
+    var g = personnage(this.calque, desc);
     el("title", {}, g).textContent = titre;
     if (!this.fraichementConstruit) {   // arrive par la porte
       this.placer(g, ENTREE.x, ENTREE.y);
@@ -922,7 +991,7 @@
     s.clients.forEach(function (cl) {
       vus[cl.id] = true;
       var g = self.clients[cl.id];
-      if (!g) g = self.clients[cl.id] = self.nouveauPerso(data.profilsClients[cl.profil].couleur, cl.id, false, data.profilsClients[cl.profil].nom);
+      if (!g) g = self.clients[cl.id] = self.nouveauPerso({ id: cl.id, profil: cl.profil }, data.profilsClients[cl.profil].nom);
       var rang = s.file.indexOf(cl.id);
       var pos = self.positionClient(cl, rang < 0 ? 0 : rang);
       self.placer(g, pos.x, pos.y);
@@ -949,7 +1018,7 @@
       parPoste[e.poste] = (parPoste[e.poste] || 0) + 1;
       var rangPoste = parPoste[e.poste] - 1;
       var g = self.employes[e.id];
-      if (!g) g = self.employes[e.id] = self.nouveauPerso({ caissier: "#12a150", technicien: "#ff7a1a", responsable: "#7b4fd6" }[e.poste] || "#2457ff", e.id, true, e.nom + " — " + data.config.postes[e.poste].nom);
+      if (!g) g = self.employes[e.id] = self.nouveauPerso({ id: e.id, poste: e.poste }, e.nom + " — " + data.config.postes[e.poste].nom);
       var x, y;
       g._bulle.style.display = "none";
       if (e.poste === "technicien") {

@@ -56,8 +56,8 @@
     if (!Compte.dispo()) return "";
     var u = Compte.utilisateur();
     if (!u) {
-      return '<div class="compte invite"><div><b>Tu joues en invité</b><span>Tes parties restent sur cet appareil. Crée un compte pour les retrouver partout.</span></div>' +
-        '<div class="boutons"><button class="bouton" data-compte="connexion">Se connecter</button><button class="bouton principal" data-compte="inscription">Créer un compte</button></div></div>';
+      return '<div class="compte invite"><div><b>Tu joues en invité</b><span>Tes parties restent sur cet appareil.</span></div>' +
+        '<div class="boutons"><button class="bouton" data-compte="connexion">Se connecter</button><button class="bouton" data-compte="inscription">Créer un compte</button></div></div>';
     }
     var h = '<div class="compte connecte"><div><b>Connecté · ' + P.esc(u.email || "") + "</b><span>" +
       (nuageErreur ? '<span class="negatif">Sauvegarde en ligne indisponible : ' + P.esc(nuageErreur) + "</span>" : nuage ? "Tes parties sont sauvegardées en ligne." : "Chargement de tes parties en ligne…") +
@@ -86,16 +86,22 @@
         return;
       }
       if (!c) {
-        h += '<div class="emplacement"><div class="infos"><b>Emplacement ' + e.emplacement + '</b><span>Vide</span></div>' +
-          '<div class="boutons"><button class="bouton principal" data-nouvelle="' + e.emplacement + '">Nouvelle partie</button></div></div>';
+        h += '<button class="emplacement vide" data-nouvelle="' + e.emplacement + '"><span class="plus" aria-hidden="true">+</span>' +
+          '<span class="infos"><b>Ouvrir une nouvelle boutique</b><span>Emplacement ' + e.emplacement + " libre</span></span></button>";
         return;
       }
+      // Le résumé « Ville · … · 27 650 € · Facile » est découpé : la ville en titre, l'argent à part
       var fin = c.fin || /partie terminée/.test(c.resume || "");
-      h += '<div class="emplacement"><div class="infos"><b>Emplacement ' + e.emplacement + "</b>" +
-        "<span>" + P.esc(c.resume || "") + "</span>" +
-        "<span>" + (connecte ? '<span class="pastille-nuage" title="Sauvegardée en ligne">☁</span> ' : "") + "Sauvegardé le " + dateCourte(c.date) + "</span></div>" +
-        '<div class="boutons">' + (fin ? "" : '<button class="bouton principal" data-continuer="' + e.emplacement + '">Continuer</button>') +
-        '<button class="bouton danger" data-supprimer="' + e.emplacement + '" title="Supprimer">Supprimer</button></div></div>';
+      var parts = (c.resume || "").split(" · "), ville = parts[0] || "Partie", argent = parts.filter(function (p) { return /€/.test(p); })[0] || "";
+      var details = parts.slice(1).filter(function (p) { return p !== argent; }).join(" · ");
+      var teinteVille = ville.split("").reduce(function (a, ch) { return (a * 31 + ch.charCodeAt(0)) % 360; }, 7);
+      h += '<div class="emplacement plein' + (fin ? " finie" : "") + '"><span class="vignette" style="--teinte:' + teinteVille + '" aria-hidden="true">' + P.esc(ville.charAt(0)) + "</span>" +
+        '<div class="infos"><b>' + P.esc(ville) + "</b><span>" + P.esc(details) + "</span>" +
+        '<span class="date">' + (connecte ? '<span class="pastille-nuage" title="Sauvegardée en ligne">☁</span> ' : "") + "Sauvegardé le " + dateCourte(c.date) + "</span></div>" +
+        (argent ? '<span class="argent">' + P.esc(argent) + "</span>" : "") +
+        '<div class="boutons">' + (fin ? "" : '<button class="bouton principal" data-continuer="' + e.emplacement + '">▶ Continuer</button>') +
+        '<button class="bouton-icone" data-supprimer="' + e.emplacement + '" title="Supprimer cette partie" aria-label="Supprimer la partie de l\'emplacement ' + e.emplacement + '">' +
+        '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>';
     });
     $("#liste-sauvegardes").innerHTML = h;
   }

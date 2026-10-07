@@ -10,9 +10,6 @@
   var HMUR = 3.0, EP = 0.14, ELEV = 0.62;           // hauteur des murs, épaisseur, inclinaison de la caméra (rad)
   var ZMIN = 0.7, ZMAX = 3.6;
   var COULEUR_CAT = { ordinateurs: "#2457ff", composants: "#12a150", peripheriques: "#f08a24" };
-  var PEAUX = ["#f2c9a6", "#e2aa84", "#c48461", "#8f5b3c", "#f6d6bd", "#6e4430"];
-  var CHEVEUX = ["#2a2a2a", "#5b3824", "#a8743f", "#d8b26a", "#1b1b1b", "#7a2f1d"];
-  var PANTALONS = ["#34405a", "#3d3d3d", "#5a6b8a", "#6b4f3a"];
 
   function hache(id) { var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0; return Math.abs(h); }
   var cacheMat = {};
@@ -913,15 +910,8 @@
   };
 
   // ------------------------------------------------------------ Personnages
-  // Personnages low-poly : silhouette, visage, coiffure, tenue et accessoires tirés au hasard (mais toujours
-  // les mêmes pour une même personne). Les profils de clients se reconnaissent à leurs accessoires :
-  // étudiants = sac à dos, joueurs = casque audio ou sweat à capuche, pros = veste et mallette, familles = sac de courses (et parfois un enfant).
-  var PEAUX2 = ["#f7dcc6", "#f0c8a4", "#e2aa84", "#d39a6e", "#c48461", "#a86d4a", "#8f5b3c", "#6e4430", "#5a3624"];
-  var CHEVEUX2 = ["#1b1b1b", "#2a2a2a", "#4a2e1d", "#5b3824", "#7a4a26", "#a8743f", "#d8b26a", "#e6cf9a", "#7a2f1d", "#b5b5b5", "#e8e8e8"];
-  var HAUTS = ["#e8504a", "#f08a24", "#f2c230", "#3fae6a", "#2bb3b1", "#3b82f6", "#6c5ce7", "#d6458f", "#ffffff", "#2c2f36", "#8a6a4a", "#9aa4b1", "#f4a6b8", "#a6d36b"];
-  var BAS = ["#34405a", "#2c3e66", "#3d3d3d", "#5a6b8a", "#6b4f3a", "#c9b38a", "#1f2328", "#7a3b3b"];
-  var CHAUSSURES = ["#1f2328", "#ffffff", "#6b4f3a", "#d6334a", "#2457ff"];
-  var UNIFORMES = { vendeur: "#2457ff", caissier: "#12a150", technicien: "#ff7a1a", responsable: "#3b2a6b", magasinier: "#5b6578", gerant: "#1f2a44" };
+  // Personnages low-poly : l'apparence (silhouette, coiffure, tenue, accessoires) vient de TMI.apparence (apparence.js),
+  // commune avec la vue 2D ; ici on la construit en volumes.
   var geoP = null;
   function geos() {
     if (geoP) return geoP;
@@ -941,15 +931,6 @@
       jupe: new T.CylinderGeometry(0.17, 0.26, 0.34, 12, 1, true)
     };
     return geoP;
-  }
-  function tireur(id) {   // tirage pseudo-aléatoire stable (mulberry32) à partir de l'identifiant
-    var a = (hache(String(id)) * 2654435761) >>> 0;
-    return function (n) {
-      a = (a + 0x6D2B79F5) >>> 0; var t = a;
-      t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      var u = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      return n == null ? u : Math.floor(u * n);
-    };
   }
   function maille(parent, geo, couleur, x, y, z) { var m = new T.Mesh(geo, typeof couleur === "string" ? mat(couleur) : couleur); m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; parent.add(m); return m; }
 
@@ -991,45 +972,38 @@
   }
   // desc = { id, profil } pour un client, { id, poste } pour un employé, { id, poste: "magasinier" | "gerant" } pour le décor
   function perso(desc) {
-    var G = geos(), r = tireur(desc.id), g = new T.Group(), corps = new T.Group();
+    var G = geos(), A = TMI.apparence(desc), g = new T.Group(), corps = new T.Group();
     g.add(corps);
-    var poste = desc.poste, profil = desc.profil, enfant = !!desc.enfant;
-    var peau = PEAUX2[r(PEAUX2.length)], cheveux = CHEVEUX2[r(CHEVEUX2.length)];
-    if (!enfant && r(10) < 2) cheveux = ["#b5b5b5", "#e8e8e8", "#8d8d8d"][r(3)];          // quelques têtes grises
-    var haut = poste ? UNIFORMES[poste] : HAUTS[r(HAUTS.length)], bas = poste ? (poste === "gerant" || poste === "responsable" ? "#2a2f3a" : "#2a3142") : BAS[r(BAS.length)];
-    var jupe = !poste && !enfant && r(5) === 0;
-    var taille = enfant ? 0.62 : 0.92 + r() * 0.16, carrure = 0.9 + r() * 0.22;
-    corps.scale.set(carrure, taille, carrure);
+    var poste = A.poste, enfant = A.enfant, peau = A.peau, cheveux = A.cheveux, haut = A.haut, bas = A.bas, jupe = !!A.jupe;
+    var taille = A.taille;
+    corps.scale.set(A.carrure, taille, A.carrure);
     // jambes (cuisse + genou + tibia + chaussure)
     function jambe(cote) {
       var hanche = new T.Group(); hanche.position.set(cote * 0.09, 0.74, 0); corps.add(hanche);
       maille(hanche, G.cuisse, jupe ? peau : bas);
       var genou = new T.Group(); genou.position.y = -0.38; hanche.add(genou);
       maille(genou, G.tibia, jupe ? peau : bas);
-      var pied = maille(genou, G.chaussure, CHAUSSURES[r(CHAUSSURES.length)], 0, -0.34, 0);
-      void pied;
+      maille(genou, G.chaussure, A.chaussures, 0, -0.34, 0);
       return { hanche: hanche, genou: genou };
     }
     var jg = jambe(-1), jd = jambe(1);
-    if (jupe) { var j = maille(corps, G.jupe, BAS[r(BAS.length)] === "#c9b38a" ? "#c9b38a" : HAUTS[r(HAUTS.length)], 0, 0.66, 0); j.material = mat(j.material.color.getStyle(), { side: T.DoubleSide }); }
+    if (jupe) maille(corps, G.jupe, mat(A.jupe, { side: T.DoubleSide }), 0, 0.66, 0);
     else maille(corps, new T.BoxGeometry(0.34, 0.14, 0.2), bas, 0, 0.78, 0);
     // buste
     var torse = maille(corps, G.torse, haut, 0, 1.0, 0); torse.scale.set(1, 1, 0.68);
-    var capuche = !poste && (profil === "joueurs" ? r(2) === 0 : r(7) === 0);
-    var veste = poste === "responsable" || poste === "gerant" || (!poste && profil === "professionnels" && r(3) > 0);
-    if (veste) {   // chemise claire et cravate visibles sous la veste
+    if (A.veste) {   // chemise claire et cravate visibles sous la veste
       cube(corps, 0.12, 0.3, 0.02, "#f4f6f9", 0, 1.04, 0.142);
-      if (r(2) === 0 || poste) cube(corps, 0.04, 0.22, 0.012, poste ? "#d6334a" : HAUTS[r(HAUTS.length)], 0, 1.03, 0.153);
+      if (A.cravate) cube(corps, 0.04, 0.22, 0.012, A.cravate, 0, 1.03, 0.153);
     }
-    if (capuche) { var cap = maille(corps, new T.TorusGeometry(0.13, 0.05, 6, 12), haut, 0, 1.25, -0.08); cap.rotation.x = 1.2; }
-    if (poste && poste !== "gerant" && poste !== "responsable") {   // badge et logo de l'enseigne
+    if (A.capuche) { var cap = maille(corps, new T.TorusGeometry(0.13, 0.05, 6, 12), haut, 0, 1.25, -0.08); cap.rotation.x = 1.2; }
+    if (A.badge) {   // badge et logo de l'enseigne
       cube(corps, 0.08, 0.1, 0.012, "#ffffff", 0.09, 1.07, 0.142);
       cube(corps, 0.055, 0.02, 0.014, haut, 0.09, 1.09, 0.146);
     }
     if (poste === "magasinier") { cube(corps, 0.36, 0.34, 0.012, "#ff9f1a", 0, 1.0, 0.142); cube(corps, 0.36, 0.03, 0.014, "#e9edf3", 0, 0.95, 0.15); }
     if (poste === "technicien") cube(corps, 0.3, 0.38, 0.012, "#3a4150", 0, 0.92, 0.143);
     // bras (manches courtes pour les t-shirts)
-    var manche = poste || veste || capuche || r(2) === 0;
+    var manche = A.manchesLongues;
     function bras(cote) {
       var epaule = new T.Group(); epaule.position.set(cote * 0.255, 1.2, 0); corps.add(epaule);
       var b = maille(epaule, G.bras, manche ? haut : peau); b.rotation.z = cote * 0.08;
@@ -1047,9 +1021,7 @@
     cube(tete, 0.05, 0.012, 0.01, "#a5524a", 0, -0.075, 0.168);
     maille(tete, G.oeil, teinte(peau, -0.12), 0, -0.02, 0.18).scale.set(1, 1.1, 1);
     // coiffure
-    var style = enfant ? ["court", "queue", "boucles", "court"][r(4)] : ["court", "court", "long", "queue", "chignon", "boucles", "rase", "casquette", "bonnet", "afro"][r(10)];
-    if (poste && (style === "casquette" || style === "bonnet")) style = "court";
-    if (poste === "magasinier") style = "casquette";
+    var style = A.coiffure;
     var cal = function (c) { var m = maille(tete, G.calotte, c, 0, 0.02, -0.005); m.rotation.x = -0.28; return m; };
     if (style === "court" || style === "long" || style === "queue" || style === "chignon") cal(cheveux);
     if (style === "long") { cube(tete, 0.34, 0.36, 0.08, cheveux, 0, -0.12, -0.12); cube(tete, 0.06, 0.26, 0.12, cheveux, -0.17, -0.08, -0.02); cube(tete, 0.06, 0.26, 0.12, cheveux, 0.17, -0.08, -0.02); }
@@ -1061,27 +1033,27 @@
       maille(tete, G.boucle, cheveux, 0, 0.17, -0.02).scale.setScalar(style === "afro" ? 1.6 : 1.2);
     }
     if (style === "rase") { var rz = cal(teinte(peau, -0.18)); rz.scale.set(0.97, 0.8, 0.97); }
-    if (style === "casquette" || style === "bonnet") {
-      var cc = poste === "magasinier" ? "#ff9f1a" : HAUTS[r(HAUTS.length)];
-      var c = cal(cc); if (style === "bonnet") { c.scale.set(1.02, 1.25, 1.02); maille(tete, new T.TorusGeometry(0.175, 0.03, 6, 16), teinte(cc, -0.15), 0, 0.04, 0).rotation.x = Math.PI / 2 - 0.28; }
+    if (A.couvreChef) {
+      var cc = A.couvreChef, c = cal(cc);
+      if (style === "bonnet") { c.scale.set(1.02, 1.25, 1.02); maille(tete, new T.TorusGeometry(0.175, 0.03, 6, 16), teinte(cc, -0.15), 0, 0.04, 0).rotation.x = Math.PI / 2 - 0.28; }
       else cube(tete, 0.2, 0.025, 0.14, cc, 0, 0.06, 0.2);
     }
-    if (!enfant && !poste && r(6) === 0 && style !== "long") { var barbe = maille(tete, G.boucle, cheveux, 0, -0.09, 0.1); barbe.scale.set(1.7, 1.1, 1.0); }
+    if (A.barbe) { var barbe = maille(tete, G.boucle, cheveux, 0, -0.09, 0.1); barbe.scale.set(1.7, 1.1, 1.0); }
     // lunettes
-    if (!enfant && r(4) === 0) {
-      var lun = r(3) === 0 ? "#1f2328" : "#7a5a3a";
-      [-0.065, 0.065].forEach(function (x) { var l = maille(tete, new T.TorusGeometry(0.035, 0.008, 6, 14), lun, x, 0.01, 0.168); void l; });
+    if (A.lunettes) {
+      var lun = A.lunettes;
+      [-0.065, 0.065].forEach(function (x) { maille(tete, new T.TorusGeometry(0.035, 0.008, 6, 14), lun, x, 0.01, 0.168); });
       cube(tete, 0.04, 0.008, 0.008, lun, 0, 0.015, 0.172);
     }
     // accessoires selon le profil
     var accessoire = null;
-    if (profil === "etudiants") { var sac = cube(corps, 0.26, 0.32, 0.14, HAUTS[r(HAUTS.length)], 0, 1.02, -0.2); void sac; cube(corps, 0.2, 0.06, 0.02, "#1f2328", 0, 0.95, -0.275); }
-    if (profil === "joueurs" && !capuche || (profil === "joueurs" && r(2) === 0)) {
-      var arc = maille(tete, new T.TorusGeometry(0.19, 0.022, 6, 16, Math.PI), "#1f2328", 0, 0.02, 0); arc.rotation.z = 0;
+    if (A.sacADos) { cube(corps, 0.26, 0.32, 0.14, A.sacADos, 0, 1.02, -0.2); cube(corps, 0.2, 0.06, 0.02, "#1f2328", 0, 0.95, -0.275); }
+    if (A.casque) {
+      maille(tete, new T.TorusGeometry(0.19, 0.022, 6, 16, Math.PI), "#1f2328", 0, 0.02, 0);
       [-1, 1].forEach(function (s0) { var e = maille(tete, new T.CylinderGeometry(0.06, 0.06, 0.05, 12), "#1f2328", s0 * 0.19, 0.0, 0); e.rotation.z = Math.PI / 2; cube(tete, 0.012, 0.05, 0.05, "#ff3d7f", s0 * 0.217, 0, 0, { emissive: new T.Color("#ff3d7f"), emissiveIntensity: 0.6 }); });
     }
-    if (profil === "professionnels" && r(2) === 0) { accessoire = new T.Group(); cube(accessoire, 0.3, 0.22, 0.08, "#4a3424", 0, -0.13, 0); cube(accessoire, 0.1, 0.03, 0.02, "#2c2f36", 0, 0.0, 0); }
-    if (profil === "familles") { accessoire = new T.Group(); cube(accessoire, 0.24, 0.26, 0.12, ["#ffffff", "#f2c230", "#2457ff"][r(3)], 0, -0.16, 0); cube(accessoire, 0.24, 0.05, 0.121, "#d6334a", 0, -0.08, 0); }
+    if (A.mallette) { accessoire = new T.Group(); cube(accessoire, 0.3, 0.22, 0.08, "#4a3424", 0, -0.13, 0); cube(accessoire, 0.1, 0.03, 0.02, "#2c2f36", 0, 0.0, 0); }
+    if (A.sacCourses) { accessoire = new T.Group(); cube(accessoire, 0.24, 0.26, 0.12, A.sacCourses, 0, -0.16, 0); cube(accessoire, 0.24, 0.05, 0.121, "#d6334a", 0, -0.08, 0); }
     if (accessoire) { accessoire.position.set(0.03, -0.44, 0); bd.add(accessoire); }
     fusion(tete); fusion(bg); fusion(bd);
     [jg, jd].forEach(function (j) { fusion(j.genou); fusion(j.hanche, [j.genou]); });
@@ -1089,7 +1061,7 @@
     var anneau = new T.Mesh(G.anneau, new T.MeshBasicMaterial({ color: 0xd6334a, transparent: true, opacity: 0, depthWrite: false })); anneau.position.y = 0.02; g.add(anneau);
     var p = { g: g, corps: corps, jg: jg, jd: jd, bg: bg, bd: bd, tete: tete, anneau: anneau, bulle: null, texteBulle: "", phase: hache(String(desc.id)) % 100, taille: taille, posture: "debout" };
     // les familles viennent parfois avec un enfant
-    if (profil === "familles" && !enfant && r(2) === 0) {
+    if (A.avecEnfant) {
       var e = perso({ id: desc.id + "-enfant", enfant: true });
       e.g.position.set(-0.42, 0, -0.1); g.add(e.g); p.enfant = e;
     }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#141b2d">
-  <title>Tycoon Magasin Informatique — prototype</title>
+  <title>Kaouch Tycoon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
@@ -14,20 +14,20 @@
   <!-- Accueil -->
   <section id="ecran-accueil" class="ecran centre">
     <div class="carte-accueil">
-      <div class="marque">
-        <div class="logo" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 32 32"><path d="M5 12 L7.5 5 H24.5 L27 12 Z" fill="#ff7a1a"/><path d="M9 6 v5 M13.5 6 v5 M18 6 v5 M22.5 6 v5" stroke="#fff" stroke-width="1.6" opacity=".7"/><rect x="6" y="12" width="20" height="14" rx="2" fill="#fff"/><rect x="13" y="17" width="6" height="9" fill="#2457ff"/><rect x="8" y="15" width="4" height="4" fill="#2457ff" opacity=".45"/><rect x="20" y="15" width="4" height="4" fill="#2457ff" opacity=".45"/></svg></div>
-        <div>
-          <p class="sur-titre">Prototype · phase 2 · l'atelier</p>
-          <h1>Tycoon Magasin Informatique</h1>
-        </div>
-      </div>
-      <p class="sous-titre">Ouvre ta boutique, tiens ta trésorerie, fais-la grandir.</p>
+      <div class="store" aria-hidden="true"></div>
+      <header class="enseigne-accueil">
+        <h1><img class="logo-jeu" src="img/logo-kaouch-tycoon.png" alt="Kaouch Tycoon" width="480" height="153"></h1>
+        <p class="enseigne-accroche">Ouvre ta boutique, tiens ta trésorerie, fais-la grandir.</p>
+      </header>
       <div id="bloc-compte" class="bloc-compte"></div>
+      <h2 class="titre-section">Tes boutiques</h2>
       <div id="liste-sauvegardes" class="sauvegardes"></div>
-      <label class="bouton secondaire fichier">Importer une sauvegarde
+      <label class="bouton secondaire fichier importer">Importer une sauvegarde
         <input type="file" id="importer" accept=".json,application/json" hidden>
       </label>
     </div>
+    <div id="scene-accueil" class="scene-accueil" aria-hidden="true"></div>
+    <p class="version-accueil">Prototype · phase 2 · l'atelier</p>
   </section>
 
   <!-- Compte : connexion, inscription, mot de passe -->
@@ -157,12 +157,14 @@
   <script src="lib/supabase.min.js"></script>
   <script src="src/compte.js"></script>
   <script src="src/sauvegarde.js"></script>
+  <script src="src/ui/apparence.js"></script>
   <script src="src/ui/vue-magasin.js"></script>
   <script src="lib/three.min.js"></script>
   <script src="src/ui/vue-3d.js"></script>
   <script src="src/ui/panneaux.js"></script>
   <script src="src/ui/vue-carte.js"></script>
   <script src="src/ui/tuto.js"></script>
+  <script src="src/ui/accueil-vivant.js"></script>
   <script src="src/main.js"></script>
 </body>
 </html>
